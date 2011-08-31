@@ -741,9 +741,12 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				}
 
 				// reserved slot
-				if(ClientID >= (g_Config.m_SvMaxClients - g_Config.m_SvReservedSlots) && g_Config.m_SvReservedSlotsPass[0] != 0 && strcmp(g_Config.m_SvReservedSlotsPass, pPassword) != 0)
+				if((ClientID >= (g_Config.m_SvMaxClients - g_Config.m_SvReservedSlots) && g_Config.m_SvReservedSlotsPass[0] != 0 && strcmp(g_Config.m_SvReservedSlotsPass, pPassword) != 0) || (g_Config.m_SvDummy && ClientID >= 8))
 				{
-					m_NetServer.Drop(ClientID, "This server is full");
+					if (g_Config.m_SvDummy)
+						m_NetServer.Drop(ClientID, "Dummy server is full. Wait for somebody leave.");
+					else
+						m_NetServer.Drop(ClientID, "This server is full");
 					return;
 				}
 
@@ -1036,10 +1039,23 @@ void CServer::SendServerInfo(NETADDR *pAddr, int Token)
 	str_format(aBuf, sizeof(aBuf), "%d", i);
 	p.AddString(aBuf, 2);
 
+	//iDDRace max players
+	int iddrace_max_players = 0;
+	if(m_NetServer.MaxClients()-g_Config.m_SvSpectatorSlots-g_Config.m_SvReservedSlots > 8)
+		iddrace_max_players = 8;
+	else 
+		iddrace_max_players = m_NetServer.MaxClients()-g_Config.m_SvSpectatorSlots-g_Config.m_SvReservedSlots;
+
+	int iddrace_max_clients = 0;
+	if (m_NetServer.MaxClients() > 8)
+		iddrace_max_clients = 8;
+	else 
+		iddrace_max_clients = m_NetServer.MaxClients();
+
 	str_format(aBuf, sizeof(aBuf), "%d", PlayerCount); p.AddString(aBuf, 3); // num players
-	str_format(aBuf, sizeof(aBuf), "%d", max(m_NetServer.MaxClients()-g_Config.m_SvSpectatorSlots-g_Config.m_SvReservedSlots, PlayerCount)); p.AddString(aBuf, 3); // max players
+	str_format(aBuf, sizeof(aBuf), "%d", iddrace_max_players); p.AddString(aBuf, 3); // max players
 	str_format(aBuf, sizeof(aBuf), "%d", ClientCount); p.AddString(aBuf, 3); // num clients
-	str_format(aBuf, sizeof(aBuf), "%d", max(m_NetServer.MaxClients()-g_Config.m_SvReservedSlots, ClientCount)); p.AddString(aBuf, 3); // max clients
+	str_format(aBuf, sizeof(aBuf), "%d", iddrace_max_clients); p.AddString(aBuf, 3); // max clients
 
 	for(i = 0; i < MAX_CLIENTS; i++)
 	{

@@ -21,6 +21,33 @@ CHAT_COMMAND("team", "?i", CFGFLAG_CHAT, ConJoinTeam, this, "Lets you join team 
 CHAT_COMMAND("top5", "?i", CFGFLAG_CHAT, ConTop5, this, "Shows five ranks of the ladder beginning with rank i (1 by default)")
 CHAT_COMMAND("showothers", "?i", CFGFLAG_CHAT, ConShowOthersChat, this, "Whether to showplayers from other teams or not (off by default), optional i = 0 for off else for on")
 
+
+/* START iDDRace chat commands */
+
+//rescue
+CHAT_COMMAND("r", "", CFGFLAG_CHAT, ConRescue, this, "/r-rescue")
+CHAT_COMMAND("rescue", "", CFGFLAG_CHAT, ConRescue, this, "/r-rescue")
+
+//dummy commands
+CHAT_COMMAND("dummy", "", CFGFLAG_CHAT, ConDummy, this, "Creates your own Dummy")
+CHAT_COMMAND("dummy_del", "", CFGFLAG_CHAT, ConDummyDelete, this, "Deletes your Dummy")
+CHAT_COMMAND("dummy_change", "", CFGFLAG_CHAT, ConDummyChange, this, "Tele Dummy to you, and you where Dummy was before")
+CHAT_COMMAND("dummy_hammer", "", CFGFLAG_CHAT, ConDummyHammer, this, "You Dummy does hammerFly")
+CHAT_COMMAND("control_dummy", "", CFGFLAG_CHAT, ConDummyControl, this, "Go to spectators and rule your dummy")
+CHAT_COMMAND("dummy_copy_move", "", CFGFLAG_CHAT, ConDummyCopyMove, this, "Dummy copies all your movement. Smth like multiclient.")
+
+
+//short dummy commands
+CHAT_COMMAND("d", "", CFGFLAG_CHAT, ConDummy, this, "Creates your own Dummy")
+CHAT_COMMAND("dd", "", CFGFLAG_CHAT, ConDummyDelete, this, "Deletes your Dummy")
+CHAT_COMMAND("dc", "", CFGFLAG_CHAT, ConDummyChange, this, "Tele Dummy to you, and you where Dummy was before")
+CHAT_COMMAND("dh", "", CFGFLAG_CHAT, ConDummyHammer, this, "You Dummy does hammerFly")
+CHAT_COMMAND("cd", "", CFGFLAG_CHAT, ConDummyControl, this, "Go to spectators and rule your dummy")
+CHAT_COMMAND("dcm", "", CFGFLAG_CHAT, ConDummyCopyMove, this, "Dummy copies all your movement. Smth like multiclient.")
+
+/* END   iDDRace chat commands */
+
+
 #if defined(CONF_SQL)
 CHAT_COMMAND("times", "?s?i", CFGFLAG_CHAT, ConTimes, this, "/times ?s?i shows last 5 times of the server or of a player beginning with name s starting with time i (i = 1 by default)")
 #endif

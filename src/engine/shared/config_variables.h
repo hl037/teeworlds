@@ -195,6 +195,17 @@ MACRO_CONFIG_INT(SvPlasmaPerSec, sv_plasma_per_sec, 3, 0, 50, CFGFLAG_SERVER, "H
 MACRO_CONFIG_INT(SvVotePause, sv_vote_pause, 1, 0, 1, CFGFLAG_SERVER, "Allow voting to pause players (instead of moving to spectators)")
 MACRO_CONFIG_INT(SvVotePauseTime, sv_vote_pause_time, 10, 0, 360, CFGFLAG_SERVER, "The time (in seconds) players have to wait in pause when paused by vote")
 
+//iDDRace
+MACRO_CONFIG_INT(SvDummyColorBody, sv_dummy_color_body, 55558, 0, 0xFFFFFF, CFGFLAG_SERVER, "Dummy body color")
+MACRO_CONFIG_INT(SvDummyColorFeet, sv_dummy_color_feet, 55558, 0, 0xFFFFFF, CFGFLAG_SERVER, "Dummy feet color")
+MACRO_CONFIG_STR(SvDummySkin, sv_dummy_skin, 24, "coala", CFGFLAG_SERVER, "Dummy skin")
+MACRO_CONFIG_INT(SvDummy, sv_dummy, 1, 0, 1, CFGFLAG_SERVER, "Yes. Here we allow /dummy at all!")
+MACRO_CONFIG_INT(SvDummyChange, sv_dummy_change, 1, 0, 1, CFGFLAG_SERVER, "Allow or not /dummy_change")
+MACRO_CONFIG_INT(SvRescue, sv_rescue, 1, 0, 1, CFGFLAG_SERVER, "Allow using chat command /r rescue")
+MACRO_CONFIG_INT(SvDummyDelay, sv_dummy_delay, 1, 0, 9999, CFGFLAG_SERVER, "Time in seconds between using /d. For disable dummyfly.")
+MACRO_CONFIG_INT(SvDummyChangeDelay, sv_dummy_change_delay, 1, 0, 9999, CFGFLAG_SERVER, "Time in seconds between using /dc")
+//iDDRace cheat:
+MACRO_CONFIG_INT(SvGunExp, sv_gunexp, 0, 0, 1, CFGFLAG_SERVER, "Gun fire as grenades")
 
 // these might need some fine tuning
 MACRO_CONFIG_INT(SvChatPenalty, sv_chat_penalty, 250, 50, 1000, CFGFLAG_SERVER, "chat score will be increased by this on every message, and decremented by 1 on every tick.")

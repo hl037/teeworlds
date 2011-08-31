@@ -156,6 +156,15 @@ public:
 	int m_Sent1stAfkWarning; // afk timer's 1st warning after 50% of sv_max_afk_time
 	int m_Sent2ndAfkWarning; // afk timer's 2nd warning after 90% of sv_max_afk_time
 	char m_pAfkMsg[160];
+
+	//iDDrace
+	bool m_IsDummy;
+	bool m_HasDummy;
+	char m_DummyName[32];
+	bool m_DummyUnderControl;
+	bool m_DummyCopyMove;
+	int64 m_Last_Dummy; //for control frequency of using /d
+	int64 m_Last_DummyChange; //for control frequency of using /dc
 };
 
 #endif

@@ -367,7 +367,7 @@ void CCharacter::FireWeapon()
 					Direction,//Dir
 					(int)(Server()->TickSpeed()*GameServer()->Tuning()->m_GunLifetime),//Span
 					0,//Freeze
-					0,//Explosive
+					g_Config.m_SvGunExp,//Explosive //iDDRace cheat
 					0,//Force
 					-1,//SoundImpact
 					WEAPON_GUN//Weapon
@@ -498,7 +498,13 @@ void CCharacter::HandleWeapons()
 	}
 
 	// fire Weapon, if wanted
+	//iDDRace
+	if(m_pPlayer->m_IsDummy == true && m_pPlayer->m_DummyUnderControl == false && m_pPlayer->m_DummyCopyMove == false && DoHammerFly == false)
+	{}
+	else
+	{
 	FireWeapon();
+	}
 /*
 	// ammo regen
 	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
@@ -581,7 +587,13 @@ void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 	if(m_NumInputs > 2 && m_pPlayer->GetTeam() != TEAM_SPECTATORS)
 	{
 		HandleWeaponSwitch();
+		//iDDRace
+		if(m_pPlayer->m_IsDummy == true && m_pPlayer->m_DummyUnderControl == false && m_pPlayer->m_DummyCopyMove == false && DoHammerFly == false)
+		{}
+		else
+		{
 		FireWeapon();
+		}
 	}
 
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
@@ -627,6 +639,17 @@ void CCharacter::Tick()
 
 	// handle Weapons
 	HandleWeapons();
+
+	//iDDRace
+	SavePos();
+	if (m_RescueUnfreeze == 2)
+	{
+		m_RescueUnfreeze = 0;
+		//m_Core.m_Vel = vec2(0,0);
+		UnFreeze();
+	}
+	if (m_RescueUnfreeze == 1)
+		m_RescueUnfreeze = 2;
 
 	DDRacePostCoreTick();
 
@@ -1447,6 +1470,22 @@ void CCharacter::DDRaceTick()
 	}
 
 	m_Core.m_Id = GetPlayer()->GetCID();
+	
+	//iDDRace
+	if (!m_pPlayer->m_IsDummy)
+		return;
+	//hammerfly
+	if (DoHammerFly == true && !m_pPlayer->m_DummyCopyMove && !m_pPlayer->m_DummyUnderControl)
+	{
+		if (GetActiveWeapon() != WEAPON_HAMMER)
+			SetActiveWeapon(WEAPON_HAMMER);
+		HammerFly();
+	}
+	else if(DoHammerFly == false && GetActiveWeapon() == WEAPON_HAMMER && !m_pPlayer->m_DummyCopyMove && !m_pPlayer->m_DummyUnderControl)
+	{
+		SetActiveWeapon(WEAPON_GUN);
+		ResetDummy();
+	}
 }
 
 
@@ -1561,4 +1600,36 @@ void CCharacter::DDRaceInit()
 	m_TeleCheckpoint = 0;
 	m_EndlessHook = g_Config.m_SvEndlessDrag;
 	m_Hit = g_Config.m_SvHit ? HIT_ALL : DISABLE_HIT_GRENADE|DISABLE_HIT_HAMMER|DISABLE_HIT_RIFLE|DISABLE_HIT_SHOTGUN;
+	//iDDRace
+	if (GetPlayer()->m_IsDummy)
+		DummyAngle = 0;
+}
+
+//iDDRace
+void CCharacter::SavePos()
+{
+	if(g_Config.m_SvRescue && m_Pos)
+	{
+		if(!m_FreezeTime && IsGrounded() && m_Pos==m_PrevPos && m_RescueUnfreeze == 0 && m_TileIndex != TILE_FREEZE
+			&& m_TileFIndex != TILE_FREEZE)
+		{
+			m_SavedPos=m_Pos;
+		}
+	}
+}
+void CCharacter::ResetDummy() //need to make dummy inactive
+{
+	m_Input.m_TargetX = 100 * cos(DummyAngle);
+	m_Input.m_TargetY = 100 * sin(DummyAngle);
+	m_Input.m_Fire = 0;
+	m_LatestInput.m_Fire = 0;
+}
+void CCharacter::HammerFly() //Dummy's action
+{
+	m_LatestInput.m_TargetX = 0; //look up
+	m_LatestInput.m_TargetY = -100;
+	m_Input.m_TargetX = 0;
+	m_Input.m_TargetY = -100;
+	m_Input.m_Fire = 1;
+	m_LatestInput.m_Fire = 1;
 }

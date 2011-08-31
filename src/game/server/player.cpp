@@ -46,6 +46,10 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 
 	// Variable initialized:
 	m_Last_Team = 0;
+
+	//iDDRace
+	m_Last_Dummy = 0;
+	m_Last_DummyChange = 0;
 }
 
 CPlayer::~CPlayer()
@@ -59,7 +63,7 @@ void CPlayer::Tick()
 #ifdef CONF_DEBUG
 	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS-g_Config.m_DbgDummies)
 #endif
-	if(!Server()->ClientIngame(m_ClientID))
+	if(!Server()->ClientIngame(m_ClientID) && !m_IsDummy)
 		return;
 
 	if (m_ChatScore > 0)
@@ -135,26 +139,48 @@ void CPlayer::Snap(int SnappingClient)
 #ifdef CONF_DEBUG
 	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS-g_Config.m_DbgDummies)
 #endif
-	if(!Server()->ClientIngame(m_ClientID))
+	if(!Server()->ClientIngame(m_ClientID) && !m_IsDummy)
 		return;
 
 	CNetObj_ClientInfo *pClientInfo = static_cast<CNetObj_ClientInfo *>(Server()->SnapNewItem(NETOBJTYPE_CLIENTINFO, m_ClientID, sizeof(CNetObj_ClientInfo)));
 	if(!pClientInfo)
 		return;
 
-	StrToInts(&pClientInfo->m_Name0, 4, Server()->ClientName(m_ClientID));
-	StrToInts(&pClientInfo->m_Clan0, 3, Server()->ClientClan(m_ClientID));
-	pClientInfo->m_Country = Server()->ClientCountry(m_ClientID);
-	StrToInts(&pClientInfo->m_Skin0, 6, m_TeeInfos.m_SkinName);
-	pClientInfo->m_UseCustomColor = m_TeeInfos.m_UseCustomColor;
-	pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
-	pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
+	//iDDRace
+	if (m_IsDummy)
+	{
+		CPlayer* pOwner = GameServer()->m_apPlayers[15 - m_ClientID];
+		StrToInts(&pClientInfo->m_Name0, 6, m_DummyName); //delete m_IsDummy?m_DummyName:
+		StrToInts(&pClientInfo->m_Clan0, 3, Server()->ClientClan(15 - m_ClientID));
+		pClientInfo->m_Country = Server()->ClientCountry(15 - m_ClientID);
+		pClientInfo->m_UseCustomColor = pOwner->m_TeeInfos.m_UseCustomColor;
+		StrToInts(&pClientInfo->m_Skin0, 6, pOwner->m_TeeInfos.m_SkinName);
+		pClientInfo->m_ColorBody = pOwner->m_TeeInfos.m_ColorBody;
+		pClientInfo->m_ColorFeet = pOwner->m_TeeInfos.m_ColorFeet;
+	} else
+	{
+		StrToInts(&pClientInfo->m_Name0, 4, Server()->ClientName(m_ClientID));
+		StrToInts(&pClientInfo->m_Clan0, 3, Server()->ClientClan(m_ClientID));
+		pClientInfo->m_Country = Server()->ClientCountry(m_ClientID);
+		StrToInts(&pClientInfo->m_Skin0, 6, m_TeeInfos.m_SkinName);
+		pClientInfo->m_UseCustomColor = m_TeeInfos.m_UseCustomColor;
+		pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
+		pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
+	}
 
 	CNetObj_PlayerInfo *pPlayerInfo = static_cast<CNetObj_PlayerInfo *>(Server()->SnapNewItem(NETOBJTYPE_PLAYERINFO, m_ClientID, sizeof(CNetObj_PlayerInfo)));
 	if(!pPlayerInfo)
 		return;
 
-	pPlayerInfo->m_Latency = SnappingClient == -1 ? m_Latency.m_Min : GameServer()->m_apPlayers[SnappingClient]->m_aActLatency[m_ClientID];
+	//iDDRace
+	if (m_IsDummy)
+	{
+		pPlayerInfo->m_Latency = GameServer()->m_apPlayers[15 - m_ClientID]->m_aActLatency[15 - m_ClientID];
+	}
+	else
+	{
+		pPlayerInfo->m_Latency = SnappingClient == -1 ? m_Latency.m_Min : GameServer()->m_apPlayers[SnappingClient]->m_aActLatency[m_ClientID];
+	}	
 	pPlayerInfo->m_Local = 0;
 	pPlayerInfo->m_ClientID = m_ClientID;
 	pPlayerInfo->m_Score = abs(m_Score) * -1;
@@ -336,6 +362,14 @@ void CPlayer::TryRespawn()
 	m_pCharacter = new(m_ClientID) CCharacter(&GameServer()->m_World);
 	m_pCharacter->Spawn(this, SpawnPos);
 	GameServer()->CreatePlayerSpawn(SpawnPos);
+
+	//iDDRace
+	if (m_IsDummy)
+	{
+		m_pCharacter->DummyIsReady = true;
+		//set owner's team
+		((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.SetCharacterTeam(m_ClientID, GameServer()->m_apPlayers[15 - m_ClientID]->GetCharacter()->Team());
+	}
 	}
 }
 
@@ -415,8 +449,8 @@ bool CPlayer::AfkTimer(int NewTargetX, int NewTargetY)
 		returns true if kicked
 	*/
 
-	if(m_Authed)
-		return false; // don't kick admins
+	if(m_Authed || m_IsDummy)
+		return false; // don't kick admins and dummies
 	if(g_Config.m_SvMaxAfkTime == 0)
 		return false; // 0 = disabled
 

@@ -142,6 +142,9 @@ private:
 	void DDRaceTick();
 	void DDRacePostCoreTick();
 	void HandleBroadcast();
+
+	//iDDRace
+	void SavePos();
 public:
 	CGameTeams* Teams();
 	bool Freeze(int Time);
@@ -232,6 +235,30 @@ public:
 	void SetNinjaActivationDir(vec2 ActivationDir) { m_Ninja.m_ActivationDir = ActivationDir; };
 	void SetNinjaActivationTick(int ActivationTick) { m_Ninja.m_ActivationTick = ActivationTick; };
 	void SetNinjaCurrentMoveTime(int CurrentMoveTime) { m_Ninja.m_CurrentMoveTime = CurrentMoveTime; };
+
+	// iDDRace
+	int m_RescueUnfreeze;
+	vec2 m_SavedPos;
+	vec2 m_ChangePos; //this is a pos for changing with dummy
+	bool DummyIsReady; //we can't tele Dummy if it's not in game, but created
+	bool m_MySavePos;//bullshit
+
+	bool DoHammerFly; //allows or not DoHammerFly()
+	bool DummyLeft;
+	bool DummyRight;
+	bool DummyHook;
+	bool DummyFire;
+	bool DummyJump;
+	float DummyAngle;
+	void ResetDummy();
+	void HammerFly(); //dummy looks up and hammer :D
+
+	//timers
+	int DummyLeftTimer;
+	int DummyRightTimer;
+	int DummyHookTimer;
+
+	bool NoSavePos;//in this time player cant saved pos for rescue
 };
 
 enum

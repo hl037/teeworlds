@@ -12,6 +12,291 @@
 
 bool CheckClientID(int ClientID);
 
+void CGameContext::ConRescue(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientID(pResult->m_ClientID)) return;
+	int ClientID = pResult->m_ClientID;
+	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
+	char aBuf[128];
+	if (!g_Config.m_SvRescue)
+		return;
+	if(!pPlayer)
+		return;
+	if(pPlayer->GetTeam()!=TEAM_SPECTATORS)
+	{
+		CCharacter* pChr = pPlayer->GetCharacter();
+		if(pChr && pChr->m_SavedPos && pChr->m_FreezeTime)
+		{
+			if(!(pChr->m_SavedPos == vec2(0,0)) && pChr->m_FreezeTime!=0)
+			{
+				pChr->m_PrevPos = pChr->m_SavedPos;//TIGROW edit
+				pChr->Core()->m_Pos = pChr->m_SavedPos;
+				pChr->m_RescueUnfreeze = 1;
+				pSelf->CreatePlayerSpawn(pChr->Core()->m_Pos);
+				pChr->UnFreeze();
+
+			}
+		}
+		else pSelf->SendChatTarget(pResult->m_ClientID, "You are not freezed!");
+	}
+	//rescue for dummy. TODO: good coders never write so much
+	if (pSelf ->m_apPlayers[ClientID]->m_HasDummy &&
+		pSelf ->m_apPlayers[15 - ClientID] && 
+		pSelf->GetPlayerChar(15 - ClientID) &&
+		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true &&
+		(pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl || 
+		pSelf ->m_apPlayers[15 - ClientID]->m_DummyCopyMove))
+	{
+		if (pSelf->m_apPlayers[15 - ClientID]->GetCharacter() &&
+			pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_SavedPos &&
+			pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_FreezeTime)
+			if(!(pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_SavedPos == vec2(0,0)) && 
+				pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_FreezeTime!=0)
+			{
+				pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_PrevPos = pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_SavedPos;//TIGROW edit
+				pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->Core()->m_Pos = pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_SavedPos;
+				pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_RescueUnfreeze = 1;
+				pSelf->CreatePlayerSpawn(pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->Core()->m_Pos);
+				pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->UnFreeze();
+			}
+	}
+}
+void CGameContext::ConDummy(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientID(pResult->m_ClientID)) return;
+	int ClientID = pResult->m_ClientID;
+	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
+	if(!pPlayer)
+		return;
+	//if client is on slot for dummies when dummies are on
+	if (g_Config.m_SvDummy && ClientID >= 8)
+	{
+		pSelf ->OnClientDrop(ClientID, "Clearing free slots for dummies");
+		return;
+	}
+
+	if (pPlayer->m_HasDummy) 
+	{
+		CCharacter* pChr = pPlayer->GetCharacter();
+		if(pPlayer->GetTeam()!=TEAM_SPECTATORS &&
+		pChr && pSelf ->m_apPlayers[15 - ClientID] && 
+		pSelf->GetPlayerChar(15 - ClientID) &&
+		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true
+		&& pSelf ->m_apPlayers[15 - ClientID]->GetTeam()!=TEAM_SPECTATORS)
+		{
+			if(pPlayer->m_Last_Dummy + pSelf->Server()->TickSpeed() * g_Config.m_SvDummyDelay/2 <= pSelf->Server()->Tick()) 
+			{
+				pSelf->CreatePlayerSpawn(pSelf->GetPlayerChar(15 - ClientID)->Core()->m_Pos);
+				pSelf->GetPlayerChar(15 - ClientID)->m_PrevPos = pSelf->m_apPlayers[ClientID]->m_ViewPos;//TIGROW edit
+				pSelf->GetPlayerChar(15 - ClientID)->Core()->m_Pos = pSelf->m_apPlayers[ClientID]->m_ViewPos;
+				pPlayer->m_Last_Dummy = pSelf->Server()->Tick();
+				pSelf->GetPlayerChar(15 - ClientID)->m_DDRaceState = DDRACE_STARTED; //important
+			}
+			else
+				pSelf->SendChatTarget(pResult->m_ClientID, "You can\'t /dummy that often.");			
+		}
+	}
+	else
+	{
+		if(!g_Config.m_SvDummy)
+			return;
+		if(pSelf ->m_apPlayers[15 - ClientID])
+		{
+			pSelf ->OnClientDrop(15 - ClientID, "Cleared slot for dummy");
+			pSelf->SendChatTarget(pResult->m_ClientID, "Sorry, there are some problems. Retry in a few seconds.");
+			return;
+		}
+		pSelf ->m_apPlayers[ClientID]->m_HasDummy = true;
+		pSelf ->OnClientConnected(15 - ClientID);
+		pSelf ->m_apPlayers[15 - ClientID]->m_IsDummy = true;
+		//let's set name for dummy
+		char buf[512];
+		str_format(buf, sizeof(buf), "[D] %s", pSelf ->Server()->ClientName(ClientID));
+		str_copy(pSelf ->m_apPlayers[15 - ClientID]->m_DummyName, buf, MAX_NAME_LENGTH);
+		char chatmsgbuf[512];
+		str_format(chatmsgbuf, sizeof(chatmsgbuf), "%s called dummy.", pSelf ->Server()->ClientName(ClientID));
+		pSelf->SendChat(-1, CGameContext::CHAT_ALL, chatmsgbuf);
+	}
+}
+void CGameContext::ConDummyDelete(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientID(pResult->m_ClientID)) return;
+	int ClientID = pResult->m_ClientID;
+    CCharacter* pChr = pSelf->GetPlayerChar(ClientID); 
+ 
+    if (!pSelf ->m_apPlayers[ClientID]->m_HasDummy || !pSelf ->m_apPlayers[15 - ClientID])
+            return;
+    
+	pSelf ->m_apPlayers[15 - ClientID]->m_IsDummy = false;
+	pSelf ->OnClientDrop(15 - ClientID, "Dummy deleted");
+	g_Config.m_SvReservedSlots = 0;
+    pSelf ->m_apPlayers[ClientID]->m_HasDummy = false;
+}
+void CGameContext::ConDummyChange(IConsole::IResult *pResult, void *pUserData)
+{
+	if (!g_Config.m_SvDummyChange)
+		return;
+
+	CGameContext *m_pGameServer;
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientID(pResult->m_ClientID)) return;
+	int ClientID = pResult->m_ClientID;
+	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
+	if(!pPlayer)
+		return;   
+	if (pSelf ->m_apPlayers[ClientID]->m_HasDummy && pPlayer->GetTeam()!=TEAM_SPECTATORS)
+	{
+		CCharacter* pChr = pPlayer->GetCharacter();
+		if(pChr && pSelf ->m_apPlayers[15 - ClientID] && 
+		pSelf->GetPlayerChar(15 - ClientID) &&
+		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true
+		&& pSelf ->m_apPlayers[15 - ClientID]->GetTeam()!=TEAM_SPECTATORS)
+		{
+			CCharacter* pDum = pSelf->m_apPlayers[15 - ClientID]->GetCharacter();
+			if(pDum->m_TileIndex == TILE_END || pDum->m_TileFIndex == TILE_END)
+				return;
+			if(pPlayer->m_Last_DummyChange + pSelf->Server()->TickSpeed() * g_Config.m_SvDummyChangeDelay/2 <= pSelf->Server()->Tick()) 
+			{
+				if(pDum->m_TileFIndex == TILE_FREEZE || pDum->m_TileIndex == TILE_FREEZE)
+				{
+					pChr->m_FreezeTime = pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_FreezeTime;
+				}
+				pChr->m_ChangePos = pSelf->m_apPlayers[15 - ClientID]->m_ViewPos;
+				pSelf->CreatePlayerSpawn(pSelf->GetPlayerChar(15 - ClientID)->Core()->m_Pos);
+				pDum->m_PrevPos = pChr->Core()->m_Pos;//TIGROW edit
+				pSelf->GetPlayerChar(15 - ClientID)->Core()->m_Pos = pSelf->m_apPlayers[ClientID]->m_ViewPos;
+				pSelf->CreatePlayerSpawn(pChr->Core()->m_Pos);
+				pChr->m_PrevPos = pChr->m_ChangePos;//TIGROW edit
+				pSelf->GetPlayerChar(ClientID)->Core()->m_Pos = pChr->m_ChangePos;
+				pPlayer->m_Last_DummyChange = pSelf->Server()->Tick();
+				pSelf->GetPlayerChar(15 - ClientID)->m_DDRaceState = DDRACE_STARTED; //important
+			}
+			else
+				pSelf->SendChatTarget(pResult->m_ClientID, "You can\'t /dummy_change that often.");
+		}
+	}
+}
+void CGameContext::ConDummyHammer(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientID(pResult->m_ClientID)) return;
+	int ClientID = pResult->m_ClientID;
+	if (pSelf ->m_apPlayers[ClientID]->m_HasDummy &&
+		pSelf ->m_apPlayers[15 - ClientID] && 
+		pSelf->GetPlayerChar(15 - ClientID) &&
+		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true)
+	{
+		if (pSelf->GetPlayerChar(15 - ClientID)->DoHammerFly)
+		{
+			pSelf->GetPlayerChar(15 - ClientID)->DoHammerFly = false;
+		}
+		else
+		{
+			pSelf->GetPlayerChar(15 - ClientID)->DoHammerFly = true;
+		}
+	}
+	else 
+	{
+		pSelf->SendChatTarget(pResult->m_ClientID, "You haven't got Dummy yet! Write /dummy to get it.");
+	}
+}
+void CGameContext::ConDummyControl(IConsole::IResult *pResult, void *pUserData)
+{
+	//this chat command need check and be updated, makes crashes
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientID(pResult->m_ClientID)) return;
+	int ClientID = pResult->m_ClientID;
+	char aBuf[128];
+	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
+	if(!pPlayer)
+		return;
+
+	CCharacter* pChr = pPlayer->GetCharacter();
+	if (pSelf ->m_apPlayers[ClientID]->m_HasDummy &&
+		//pSelf ->m_apPlayers[15 - ClientID] && 
+		pSelf->GetPlayerChar(15 - ClientID) &&
+		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true)
+	{
+		if(!pPlayer->GetTeam() && pChr && (!pChr->GetWeaponGot(WEAPON_NINJA) || pChr->m_FreezeTime) && pChr->IsGrounded() && pChr->m_Pos==pChr->m_PrevPos && !pPlayer->m_InfoSaved)
+		{
+			if(pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvPauseFrequency <= pSelf->Server()->Tick())
+			{
+				pPlayer->SaveCharacter();
+				pPlayer->m_InfoSaved = true;
+				pPlayer->SetTeam(TEAM_SPECTATORS);
+				pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl = true;
+				pSelf->GetPlayerChar(15 - ClientID)->m_DDRaceState = DDRACE_STARTED; //important
+				pPlayer->m_SpectatorID = (15 - ClientID);
+			}
+			else
+				pSelf->SendChatTarget(pResult->m_ClientID, "You can\'t use dummy control that often.");
+		}
+		else if(pPlayer->GetTeam()==TEAM_SPECTATORS && pPlayer->m_InfoSaved && pPlayer->m_ForcePauseTime == 0)
+		{
+			pPlayer->m_PauseInfo.m_Respawn = true;
+			pPlayer->SetTeam(TEAM_RED);
+			pPlayer->m_InfoSaved = false;
+			pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl = false;
+		}
+		else if(pChr)
+			pSelf->SendChatTarget(pResult->m_ClientID, pChr->GetWeaponGot(WEAPON_NINJA)?"You can't use /pause while you are a ninja":(!pChr->IsGrounded())?"You can't use /pause while you are a in air":"You can't use /pause while you are moving");
+		else if(pPlayer->m_ForcePauseTime > 0)
+		{
+			str_format(aBuf, sizeof(aBuf), "You have been force-paused. %ds left.", pPlayer->m_ForcePauseTime/pSelf->Server()->TickSpeed());
+			pSelf->SendChatTarget(pResult->m_ClientID, aBuf);
+		}
+		else if(pPlayer->m_ForcePauseTime < 0)
+		{
+			pSelf->SendChatTarget(pResult->m_ClientID, "You have been force-paused.");
+		}
+		else
+			pSelf->SendChatTarget(pResult->m_ClientID, "No pause data saved.");
+	}
+	else 
+	{
+		pSelf->SendChatTarget(pResult->m_ClientID, "You haven't got Dummy yet! Write /dummy to get it.");
+	}
+	
+}
+void CGameContext::ConDummyCopyMove(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!CheckClientID(pResult->m_ClientID)) return;
+	int ClientID = pResult->m_ClientID;
+
+	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
+	if(!pPlayer)
+		return;
+
+	CCharacter* pChr = pPlayer->GetCharacter();
+	char aBuf[128];
+	if (pSelf ->m_apPlayers[ClientID]->m_HasDummy &&
+		//pSelf ->m_apPlayers[15 - ClientID] && 
+		pSelf->GetPlayerChar(15 - ClientID) &&
+		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true)
+	{
+		if (pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl)
+		{
+			pSelf->SendChatTarget(pResult->m_ClientID, "You are controlling dummy right now. Write /control_dummy again to be able to use /dummy_copy_move.");
+		}
+		else if(pPlayer->GetTeam()==TEAM_SPECTATORS)
+		{
+			pSelf->SendChatTarget(pResult->m_ClientID, "You are not in game! Esc -> Join game.");
+		}
+		else if (pSelf ->m_apPlayers[15 - ClientID]->m_DummyCopyMove)
+			pSelf ->m_apPlayers[15 - ClientID]->m_DummyCopyMove = false;
+		else
+			pSelf ->m_apPlayers[15 - ClientID]->m_DummyCopyMove = true;
+	}	
+	else 
+	{
+		pSelf->SendChatTarget(pResult->m_ClientID, "You haven't got Dummy yet! Write /dummy to get it.");
+	}
+}
+
 void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
@@ -35,7 +320,7 @@ void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
 #endif
 	pSelf->SendChatTarget(pResult->m_ClientID,"Official site: DDRace.info");
 	pSelf->SendChatTarget(pResult->m_ClientID,"For more Info /cmdlist");
-	pSelf->SendChatTarget(pResult->m_ClientID,"Or visit DDRace.info");
+	pSelf->SendChatTarget(pResult->m_ClientID,"iDDRace edit: iDDRace.iPod-Clan.com");
 }
 
 void CGameContext::ConHelp(IConsole::IResult *pResult, void *pUserData)
