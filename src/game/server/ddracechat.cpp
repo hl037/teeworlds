@@ -71,7 +71,7 @@ void CGameContext::ConDummy(IConsole::IResult *pResult, void *pUserData)
 	if(!pPlayer)
 		return;
 	//if client is on slot for dummies when dummies are on
-	if (g_Config.m_SvDummy && ClientID >= 8)
+	if (g_Config.m_SvDummies && ClientID >= 8)
 	{
 		pSelf ->OnClientDrop(ClientID, "Clearing free slots for dummies");
 		return;
@@ -79,6 +79,8 @@ void CGameContext::ConDummy(IConsole::IResult *pResult, void *pUserData)
 
 	if (pPlayer->m_HasDummy) 
 	{
+		if(!g_Config.m_SvDummy)
+			return;
 		CCharacter* pChr = pPlayer->GetCharacter();
 		if(pPlayer->GetTeam()!=TEAM_SPECTATORS &&
 		pChr && pSelf ->m_apPlayers[15 - ClientID] && 
@@ -100,7 +102,7 @@ void CGameContext::ConDummy(IConsole::IResult *pResult, void *pUserData)
 	}
 	else
 	{
-		if(!g_Config.m_SvDummy)
+		if(!g_Config.m_SvDummies)
 			return;
 		if(pSelf ->m_apPlayers[15 - ClientID])
 		{
@@ -205,6 +207,8 @@ void CGameContext::ConDummyHammer(IConsole::IResult *pResult, void *pUserData)
 }
 void CGameContext::ConDummyControl(IConsole::IResult *pResult, void *pUserData)
 {
+	if (!g_Config.m_SvControlDummy)
+		return;
 	//this chat command need check and be updated, makes crashes
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!CheckClientID(pResult->m_ClientID)) return;
@@ -263,6 +267,8 @@ void CGameContext::ConDummyControl(IConsole::IResult *pResult, void *pUserData)
 }
 void CGameContext::ConDummyCopyMove(IConsole::IResult *pResult, void *pUserData)
 {
+	if (!g_Config.m_SvDummyCopyMove)
+		return;
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!CheckClientID(pResult->m_ClientID)) return;
 	int ClientID = pResult->m_ClientID;
