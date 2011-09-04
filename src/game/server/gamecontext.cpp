@@ -1,5 +1,8 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+
+#include <base/tl/sorted_array.h>
+
 #include <new>
 #include <base/math.h>
 #include <engine/shared/config.h>
@@ -49,8 +52,8 @@ void CGameContext::Construct(int Resetting)
 		m_pVoteOptionHeap = new CHeap();
 		m_pScore = 0;
 		m_NumMutes = 0;
-		m_pChatCommands = CreateConsole(CFGFLAG_CHAT);
 	}
+	m_ChatResponseTargetID = -1;
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -799,24 +802,20 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 		if(pMsg->m_pMessage[0]=='/')
 		{
-			ChatResponseInfo Info;
-			Info.m_GameContext = this;
-			Info.m_To = ClientID;
+			m_ChatResponseTargetID = ClientID;
+			Console()->SetFlagMask(CFGFLAG_CHAT);
 
 			if (pPlayer->m_Authed)
 				Console()->SetAccessLevel(pPlayer->m_Authed == CServer::AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : IConsole::ACCESS_LEVEL_MOD);
 			else
 				Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_USER);
-			// Todo(Shereef Marzouk): Follow up on the RCON/Chat redirection
-			if(!m_pChatCommands->ExecuteLine(pMsg->m_pMessage + 1, ClientID))
-			{
-				char aBuf[128];
-				str_format(aBuf, sizeof(aBuf), "The execution of the line '%s' has been denied (maybe the admin didn't allow the command for users).", pMsg->m_pMessage + 1);
-				SendChatTarget(ClientID, aBuf);
-			}
+
+			Console()->ExecuteLine(pMsg->m_pMessage + 1, ClientID);
+			Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "chat-command", pMsg->m_pMessage);
+
 			Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_ADMIN);
-			Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "chat",
-					pMsg->m_pMessage);
+			Console()->SetFlagMask(CFGFLAG_SERVER);
+			m_ChatResponseTargetID = -1;
 		}
 		else
 			SendChat(ClientID, Team, pMsg->m_pMessage, ClientID);
@@ -1705,6 +1704,8 @@ void CGameContext::OnConsoleInit()
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 
+	Console()->RegisterPrintCallback(0, SendChatResponse, this);
+
 	Console()->Register("tune", "si", CFGFLAG_SERVER, ConTuneParam, this, "Tune variable to value");
 	Console()->Register("tune_reset", "", CFGFLAG_SERVER, ConTuneReset, this, "Reset tuning");
 	Console()->Register("tune_dump", "", CFGFLAG_SERVER, ConTuneDump, this, "Dump tuning");
@@ -1726,7 +1727,7 @@ void CGameContext::OnConsoleInit()
 
 #define CONSOLE_COMMAND(name, params, flags, callback, userdata, help) m_pConsole->Register(name, params, flags, callback, userdata, help);
 #include "game/ddracecommands.h"
-#define CHAT_COMMAND(name, params, flags, callback, userdata, help) m_pChatCommands->Register(name, params, flags, callback, userdata, help);
+#define CHAT_COMMAND(name, params, flags, callback, userdata, help) m_pConsole->Register(name, params, flags, callback, userdata, help);
 #include "ddracechat.h"
 }
 
@@ -1751,10 +1752,17 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//players = new CPlayer[MAX_CLIENTS];
 
 	// Reset Tuning
-	ResetTuning();
-	g_Config.m_SvHit = 1;
-	g_Config.m_SvEndlessDrag = 0;
-	g_Config.m_SvOldLaser = 0;
+	if(g_Config.m_SvTuneReset)
+	{
+		ResetTuning();
+	}
+
+	if(g_Config.m_SvDDRaceTuneReset)
+	{
+		g_Config.m_SvHit = 1;
+		g_Config.m_SvEndlessDrag = 0;
+		g_Config.m_SvOldLaser = 0;
+	}
 
 	char buf[512];
 	str_format(buf, sizeof(buf), "data/maps/%s.cfg", g_Config.m_SvMap);
@@ -1971,7 +1979,11 @@ void CGameContext::SendChatResponseAll(const char *pLine, void *pUser)
 
 void CGameContext::SendChatResponse(const char *pLine, void *pUser)
 {
-	ChatResponseInfo *pInfo = (ChatResponseInfo *)pUser;
+	CGameContext *pSelf = (CGameContext *)pUser;
+	int ClientID = pSelf->m_ChatResponseTargetID;
+
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS)
+		return;
 
 	static volatile int ReentryGuard = 0;
 
@@ -1984,7 +1996,7 @@ void CGameContext::SendChatResponse(const char *pLine, void *pUser)
 		pLine++;
 	while(*(pLine - 2) != ':' && *pLine != 0); // remove the category (e.g. [Console]: No Such Command)
 
-	pInfo->m_GameContext->SendChatTarget(pInfo->m_To, pLine);
+	pSelf->SendChatTarget(ClientID, pLine);
 
 	ReentryGuard--;
 }

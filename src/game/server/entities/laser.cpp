@@ -19,7 +19,7 @@ CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEner
 	m_Type = Type;
 	GameWorld()->InsertEntity(this);
 	DoBounce();
-	m_TeamMask = GameServer()->GetPlayerChar(Owner) ? GameServer()->GetPlayerChar(Owner)->Teams()->TeamMask(GameServer()->GetPlayerChar(Owner)->Team()) : 0;
+	m_TeamMask = GameServer()->GetPlayerChar(Owner) ? GameServer()->GetPlayerChar(Owner)->Teams()->TeamMask(GameServer()->GetPlayerChar(Owner)->Team(), -1, m_Owner) : 0;
 }
 
 
@@ -90,7 +90,7 @@ void CLaser::DoBounce()
 			vec2 TempPos = m_Pos;
 			vec2 TempDir = m_Dir * 4.0f;
 
-			int f;
+			int f = 0;
 			if(Res == -1)
 			{
 				f = GameServer()->Collision()->GetTile(round(Coltile.x), round(Coltile.y));

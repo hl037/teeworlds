@@ -108,7 +108,7 @@ void CCollision::Init(class CLayers *pLayers)
 				}
 
 				// DDRace tiles
-				if(Index == TILE_THROUGH || (Index >= TILE_FREEZE && Index <= TILE_UNFREEZE) || (Index >= TILE_SWITCHOPEN && Index <= TILE_TELECHECKIN) || (Index >= TILE_BEGIN && Index <= TILE_STOPA) || Index == TILE_CP || Index == TILE_CP_F || (Index >= TILE_OLDLASER && Index <= TILE_NPH) || (Index >= TILE_EHOOK_START && Index <= TILE_HIT_END) || (Index >= TILE_DFREEZE && Index <= TILE_DUNFREEZE))
+				if(Index == TILE_THROUGH || (Index >= TILE_FREEZE && Index <= TILE_UNFREEZE) || (Index >= TILE_SWITCHOPEN && Index <= TILE_TELECHECKIN) || (Index >= TILE_BEGIN && Index <= TILE_STOPA) || Index == TILE_CP || Index == TILE_CP_F || (Index >= TILE_OLDLASER && Index <= TILE_NPH) || (Index >= TILE_EHOOK_START && Index <= TILE_SOLO_END) || (Index >= TILE_DFREEZE && Index <= TILE_DUNFREEZE))
 					m_pFront[i].m_Index = Index;
 			}
 		}
@@ -134,7 +134,7 @@ void CCollision::Init(class CLayers *pLayers)
 			}
 
 			// DDRace tiles
-			if(Index == TILE_THROUGH || (Index >= TILE_FREEZE && Index <= TILE_UNFREEZE) || (Index >= TILE_SWITCHOPEN && Index <= TILE_TELECHECKIN) || (Index >= TILE_BEGIN && Index <= TILE_STOPA) || Index == TILE_CP || Index == TILE_CP_F || (Index >= TILE_OLDLASER && Index <= TILE_NPH) || (Index >= TILE_EHOOK_START && Index <= TILE_HIT_END) || (Index >= TILE_DFREEZE && Index <= TILE_DUNFREEZE))
+			if(Index == TILE_THROUGH || (Index >= TILE_FREEZE && Index <= TILE_UNFREEZE) || (Index >= TILE_SWITCHOPEN && Index <= TILE_TELECHECKIN) || (Index >= TILE_BEGIN && Index <= TILE_STOPA) || Index == TILE_CP || Index == TILE_CP_F || (Index >= TILE_OLDLASER && Index <= TILE_NPH) || (Index >= TILE_EHOOK_START && Index <= TILE_SOLO_END) || (Index >= TILE_DFREEZE && Index <= TILE_DUNFREEZE))
 				m_pTiles[i].m_Index = Index;
 		}
 	}
@@ -362,12 +362,12 @@ int CCollision::IsThrough(int x, int y)
 
 int CCollision::IsNoLaser(int x, int y)
 {
-   return (CCollision::GetTile(x,y) & COLFLAG_NOLASER);
+	return (CCollision::GetTile(x,y) & COLFLAG_NOLASER);
 }
 
 int CCollision::IsFNoLaser(int x, int y)
 {
-   return (CCollision::GetFTile(x,y) & COLFLAG_NOLASER);
+	return (CCollision::GetFTile(x,y) & COLFLAG_NOLASER);
 }
 
 int CCollision::IsTeleport(int Index)
@@ -436,7 +436,6 @@ void CCollision::GetSpeedup(int Index, vec2 *Dir, int *Force, int *MaxSpeed)
 {
 	if(Index < 0 || !m_pSpeedup)
 		return;
-	vec2 Direction = vec2(1, 0);
 	float Angle = m_pSpeedup[Index].m_Angle * (pi / 180.0f);
 	*Force = m_pSpeedup[Index].m_Force;
 	*Dir = vec2(cos(Angle), sin(Angle));
