@@ -38,7 +38,7 @@ void CGameContext::ConRescue(IConsole::IResult *pResult, void *pUserData)
 
 			}
 		}
-		else pSelf->SendChatTarget(pResult->m_ClientID, "You are not freezed!");
+		else pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "rescue", "You are not freezed!");
 	}
 	//rescue for dummy. TODO: good coders never write so much
 	if (pSelf ->m_apPlayers[ClientID]->m_HasDummy &&
@@ -97,7 +97,7 @@ void CGameContext::ConDummy(IConsole::IResult *pResult, void *pUserData)
 				pSelf->GetPlayerChar(15 - ClientID)->m_DDRaceState = DDRACE_STARTED; //important
 			}
 			else
-				pSelf->SendChatTarget(pResult->m_ClientID, "You can\'t /dummy that often.");			
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dummy", "You can\'t /dummy that often.");			
 		}
 	}
 	else
@@ -107,7 +107,7 @@ void CGameContext::ConDummy(IConsole::IResult *pResult, void *pUserData)
 		if(pSelf ->m_apPlayers[15 - ClientID])
 		{
 			pSelf ->OnClientDrop(15 - ClientID, "Cleared slot for dummy");
-			pSelf->SendChatTarget(pResult->m_ClientID, "Sorry, there are some problems. Retry in a few seconds.");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Sorry, there are some problems. Retry in a few seconds.");
 			return;
 		}
 		pSelf ->m_apPlayers[ClientID]->m_HasDummy = true;
@@ -177,12 +177,14 @@ void CGameContext::ConDummyChange(IConsole::IResult *pResult, void *pUserData)
 				pSelf->GetPlayerChar(15 - ClientID)->m_DDRaceState = DDRACE_STARTED; //important
 			}
 			else
-				pSelf->SendChatTarget(pResult->m_ClientID, "You can\'t /dummy_change that often.");
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dummy change", "You can\'t /dummy_change that often.");
 		}
 	}
 }
 void CGameContext::ConDummyHammer(IConsole::IResult *pResult, void *pUserData)
 {
+	if (!g_Config.m_SvDummyHammer)
+		return;
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!CheckClientID(pResult->m_ClientID)) return;
 	int ClientID = pResult->m_ClientID;
@@ -202,7 +204,7 @@ void CGameContext::ConDummyHammer(IConsole::IResult *pResult, void *pUserData)
 	}
 	else 
 	{
-		pSelf->SendChatTarget(pResult->m_ClientID, "You haven't got Dummy yet! Write /dummy to get it.");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dummy hammer", "You haven't got Dummy yet! Write /dummy to get it.");
 	}
 }
 void CGameContext::ConDummyControl(IConsole::IResult *pResult, void *pUserData)
@@ -236,7 +238,7 @@ void CGameContext::ConDummyControl(IConsole::IResult *pResult, void *pUserData)
 				pPlayer->m_SpectatorID = (15 - ClientID);
 			}
 			else
-				pSelf->SendChatTarget(pResult->m_ClientID, "You can\'t use dummy control that often.");
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", "You can\'t use dummy control that often.");
 		}
 		else if(pPlayer->GetTeam()==TEAM_SPECTATORS && pPlayer->m_InfoSaved && pPlayer->m_ForcePauseTime == 0)
 		{
@@ -246,22 +248,22 @@ void CGameContext::ConDummyControl(IConsole::IResult *pResult, void *pUserData)
 			pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl = false;
 		}
 		else if(pChr)
-			pSelf->SendChatTarget(pResult->m_ClientID, pChr->GetWeaponGot(WEAPON_NINJA)?"You can't use /pause while you are a ninja":(!pChr->IsGrounded())?"You can't use /pause while you are a in air":"You can't use /pause while you are moving");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", pChr->GetWeaponGot(WEAPON_NINJA)?"You can't use /pause while you are a ninja":(!pChr->IsGrounded())?"You can't use /pause while you are a in air":"You can't use /pause while you are moving");
 		else if(pPlayer->m_ForcePauseTime > 0)
 		{
 			str_format(aBuf, sizeof(aBuf), "You have been force-paused. %ds left.", pPlayer->m_ForcePauseTime/pSelf->Server()->TickSpeed());
-			pSelf->SendChatTarget(pResult->m_ClientID, aBuf);
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", aBuf);
 		}
 		else if(pPlayer->m_ForcePauseTime < 0)
 		{
-			pSelf->SendChatTarget(pResult->m_ClientID, "You have been force-paused.");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", "You have been force-paused.");
 		}
 		else
-			pSelf->SendChatTarget(pResult->m_ClientID, "No pause data saved.");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", "No pause data saved.");
 	}
 	else 
 	{
-		pSelf->SendChatTarget(pResult->m_ClientID, "You haven't got Dummy yet! Write /dummy to get it.");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", "You haven't got Dummy yet! Write /dummy to get it.");
 	}
 	
 }
@@ -286,11 +288,11 @@ void CGameContext::ConDummyCopyMove(IConsole::IResult *pResult, void *pUserData)
 	{
 		if (pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl)
 		{
-			pSelf->SendChatTarget(pResult->m_ClientID, "You are controlling dummy right now. Write /control_dummy again to be able to use /dummy_copy_move.");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dcm", "You are controlling dummy right now. Write /control_dummy again to be able to use /dummy_copy_move.");
 		}
 		else if(pPlayer->GetTeam()==TEAM_SPECTATORS)
 		{
-			pSelf->SendChatTarget(pResult->m_ClientID, "You are not in game! Esc -> Join game.");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dcm", "You are not in game! Esc -> Join game.");
 		}
 		else if (pSelf ->m_apPlayers[15 - ClientID]->m_DummyCopyMove)
 			pSelf ->m_apPlayers[15 - ClientID]->m_DummyCopyMove = false;
@@ -299,7 +301,7 @@ void CGameContext::ConDummyCopyMove(IConsole::IResult *pResult, void *pUserData)
 	}	
 	else 
 	{
-		pSelf->SendChatTarget(pResult->m_ClientID, "You haven't got Dummy yet! Write /dummy to get it.");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dcm", "You haven't got Dummy yet! Write /dummy to get it.");
 	}
 }
 
@@ -324,9 +326,9 @@ void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
 #if defined( GIT_SHORTREV_HASH )
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info", "Git revision hash: " GIT_SHORTREV_HASH);
 #endif
-	pSelf->SendChatTarget(pResult->m_ClientID,"Official site: DDRace.info");
-	pSelf->SendChatTarget(pResult->m_ClientID,"For more Info /cmdlist");
-	pSelf->SendChatTarget(pResult->m_ClientID,"iDDRace edit: iDDRace.iPod-Clan.com");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info", "Official site: DDRace.info");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info", "For more Info /cmdlist");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "info", "iDDRace edit: iDDRace.iPod-Clan.com");
 }
 
 void CGameContext::ConHelp(IConsole::IResult *pResult, void *pUserData)
