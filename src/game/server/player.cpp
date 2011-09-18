@@ -46,16 +46,14 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 
 	// Variable initialized:
 	m_Last_Team = 0;
-<<<<<<< HEAD
+
+#if defined(CONF_SQL)
+	m_LastSQLQuery = 0;
+#endif
 
 	//iDDRace
 	m_Last_Dummy = 0;
 	m_Last_DummyChange = 0;
-=======
-#if defined(CONF_SQL)
-	m_LastSQLQuery = 0;
-#endif
->>>>>>> 116daa67d3443a6ec5c00e51a71d81091f134980
 }
 
 CPlayer::~CPlayer()

@@ -157,7 +157,10 @@ public:
 	int m_Sent1stAfkWarning; // afk timer's 1st warning after 50% of sv_max_afk_time
 	int m_Sent2ndAfkWarning; // afk timer's 2nd warning after 90% of sv_max_afk_time
 	char m_pAfkMsg[160];
-<<<<<<< HEAD
+
+#if defined(CONF_SQL)
+	int64 m_LastSQLQuery;
+#endif
 
 	//iDDrace
 	bool m_IsDummy;
@@ -167,11 +170,6 @@ public:
 	bool m_DummyCopyMove;
 	int64 m_Last_Dummy; //for control frequency of using /d
 	int64 m_Last_DummyChange; //for control frequency of using /dc
-=======
-#if defined(CONF_SQL)
-	int64 m_LastSQLQuery;
-#endif
->>>>>>> 116daa67d3443a6ec5c00e51a71d81091f134980
 };
 
 #endif
