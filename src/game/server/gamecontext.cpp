@@ -1339,14 +1339,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			return;
 		if(m_apPlayers[15 - ClientID]->m_LastKill && m_apPlayers[15 - ClientID]->m_LastKill+Server()->TickSpeed()*g_Config.m_SvKillDelay > Server()->Tick())
 			return;
-		if(m_apPlayers[15 - ClientID]->m_IsDummy && 
-		m_apPlayers[15 - ClientID]->GetCharacter() &&
-		m_apPlayers[15 - ClientID]->GetCharacter()->DummyIsReady == true
-		&& m_apPlayers[15 - ClientID]->GetTeam()!=TEAM_SPECTATORS)
-		{	
-			m_apPlayers[15 - ClientID]->m_LastKill = Server()->Tick();
-			m_apPlayers[15 - ClientID]->KillCharacter(WEAPON_SELF);
-		}
+		if(!m_apPlayers[15 - ClientID]->m_IsDummy || !m_apPlayers[15 - ClientID]->GetCharacter() || !m_apPlayers[15 - ClientID]->GetCharacter()->DummyIsReady || m_apPlayers[15 - ClientID]->GetTeam()== TEAM_SPECTATORS || m_apPlayers[ClientID]->GetTeam()==TEAM_SPECTATORS)
+			return;
+		m_apPlayers[15 - ClientID]->m_LastKill = Server()->Tick();
+		m_apPlayers[15 - ClientID]->KillCharacter(WEAPON_SELF);	
 	}
 }
 
