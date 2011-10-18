@@ -372,7 +372,8 @@ void CPlayer::TryRespawn()
 	{
 		m_pCharacter->DummyIsReady = true;
 		//set owner's team
-		((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.SetCharacterTeam(m_ClientID, GameServer()->m_apPlayers[15 - m_ClientID]->GetCharacter()->Team());
+		if (GameServer()->m_apPlayers[15 - m_ClientID]->GetCharacter()) //MAP94 edit
+			((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.SetCharacterTeam(m_ClientID, GameServer()->m_apPlayers[15 - m_ClientID]->GetCharacter()->Team());
 	}
 	}
 }
