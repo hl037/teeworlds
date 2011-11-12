@@ -537,7 +537,7 @@ void CGameContext::OnTick()
 			{
 				char aBuf[64];
 				str_format(aBuf, sizeof(aBuf),"Vote passed enforced by server administrator");
-				Console()->ExecuteLine(m_aVoteCommand);
+				Console()->ExecuteLine(m_aVoteCommand, m_VoteEnforcer);
 				SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 				EndVote();
 			}
@@ -809,6 +809,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				Console()->SetAccessLevel(pPlayer->m_Authed == CServer::AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : IConsole::ACCESS_LEVEL_MOD);
 			else
 				Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_USER);
+			Console()->SetPrintOutputLevel(m_ChatPrintCBIndex, 0);
 
 			Console()->ExecuteLine(pMsg->m_pMessage + 1, ClientID);
 			Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "chat-command", pMsg->m_pMessage);
@@ -1671,9 +1672,10 @@ void CGameContext::ConVote(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(str_comp_nocase(pResult->GetString(0), "yes") == 0)
-		pSelf->m_VoteEnforce = CGameContext::VOTE_ENFORCE_YES;
+		pSelf->m_VoteEnforce = CGameContext::VOTE_ENFORCE_YES_ADMIN;
 	else if(str_comp_nocase(pResult->GetString(0), "no") == 0)
-		pSelf->m_VoteEnforce = CGameContext::VOTE_ENFORCE_NO;
+		pSelf->m_VoteEnforce = CGameContext::VOTE_ENFORCE_NO_ADMIN;
+	pSelf->m_VoteEnforcer = pResult->m_ClientID;
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "admin forced vote %s", pResult->GetString(0));
 	pSelf->SendChatTarget(-1, aBuf);
@@ -1700,7 +1702,7 @@ void CGameContext::OnConsoleInit()
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
 
-	Console()->RegisterPrintCallback(0, SendChatResponse, this);
+	m_ChatPrintCBIndex = Console()->RegisterPrintCallback(0, SendChatResponse, this);
 
 	Console()->Register("tune", "si", CFGFLAG_SERVER, ConTuneParam, this, "Tune variable to value");
 	Console()->Register("tune_reset", "", CFGFLAG_SERVER, ConTuneReset, this, "Reset tuning");
