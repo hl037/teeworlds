@@ -313,10 +313,10 @@ void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Now it is maintained & re-coded by:");
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "\'[Egypt]GreYFoX@GTi\' and \'[BlackTee]den\'");
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Others Helping on the code: \'heinrich5991\', \'ravomavain\', \'Trust o_0 Aeeeh ?!\', \'noother\', \'<3 fisted <3\' & \'LemonFace\'");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Documentation: Zeta-Hoernchen, Entities: Fisico");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Documentation: Zeta-Hoernchen & Learath2, Entities: Fisico");
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Code (in the past): \'3DA\' and \'Fluxid\'");
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Please check the changelog on DDRace.info.");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Also the commit log on github.com/GreYFoXGTi/DDRace.");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit", "Also the commit log on github.com/GreYFoX/teeworlds .");
 }
 
 void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
@@ -677,19 +677,16 @@ void CGameContext::ConJoinTeam(IConsole::IResult *pResult, void *pUserData)
 		}
 		else
 		{
-			if(((CGameControllerDDRace*)pSelf->m_pController)->m_Teams.SetCharacterTeam(pPlayer->GetCID(), pResult->GetInteger(0)))
+			if(pPlayer->m_Last_Team + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
 			{
-				if(pPlayer->m_Last_Team + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay <= pSelf->Server()->Tick())
-				{
-					char aBuf[512];
-					str_format(aBuf, sizeof(aBuf), "%s joined team %d", pSelf->Server()->ClientName(pPlayer->GetCID()), pResult->GetInteger(0));
-					pSelf->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
-					pPlayer->m_Last_Team = pSelf->Server()->Tick();
-				}
-				else
-				{
-					pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "join", "You can\'t join teams that fast!");
-				}
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "join", "You can\'t join teams that fast!");
+			}
+			else if(((CGameControllerDDRace*)pSelf->m_pController)->m_Teams.SetCharacterTeam(pPlayer->GetCID(), pResult->GetInteger(0)))
+			{
+				char aBuf[512];
+				str_format(aBuf, sizeof(aBuf), "%s joined team %d", pSelf->Server()->ClientName(pPlayer->GetCID()), pResult->GetInteger(0));
+				pSelf->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+				pPlayer->m_Last_Team = pSelf->Server()->Tick();
 			}
 			else
 			{
