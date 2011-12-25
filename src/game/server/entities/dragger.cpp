@@ -1,13 +1,11 @@
-/* copyright (c) 2007 magnus auvinen, see licence.txt for more info */
+/* (c) Shereef Marzouk. See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
 #include <engine/config.h>
 #include <engine/server.h>
 #include <game/generated/protocol.h>
 #include <game/server/gamecontext.h>
+#include <game/server/teams.h>
+#include <game/server/gamemodes/DDRace.h>
 #include "dragger.h"
-
-//////////////////////////////////////////////////
-// CDragger
-//////////////////////////////////////////////////
 
 const int LENGTH=700;
 
@@ -93,6 +91,8 @@ void CDragger::Reset()
 
 void CDragger::Tick()
 {
+	if (((CGameControllerDDRace*) GameServer()->m_pController)->m_Teams.GetTeamState(m_CatchedTeam)	== CGameTeams::TEAMSTATE_EMPTY)
+		return;
 	if (Server()->Tick()%int(Server()->TickSpeed()*0.15f)==0)
 	{
 		int Flags;
@@ -113,6 +113,8 @@ void CDragger::Tick()
 
 void CDragger::Snap(int SnappingClient)
 {
+	if (((CGameControllerDDRace*) GameServer()->m_pController)->m_Teams.GetTeamState(m_CatchedTeam)	== CGameTeams::TEAMSTATE_EMPTY)
+		return;
 	if (m_Target)
 	{
 		if(NetworkClipped(SnappingClient, m_Pos) && NetworkClipped(SnappingClient,m_Target->m_Pos))
