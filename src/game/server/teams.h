@@ -1,3 +1,4 @@
+/* (c) Shereef Marzouk. See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
 #ifndef GAME_SERVER_TEAMS_H
 #define GAME_SERVER_TEAMS_H
 
@@ -18,7 +19,6 @@ public:
 	{
 		TEAMSTATE_EMPTY, 
 		TEAMSTATE_OPEN,
-		TEAMSTATE_CLOSED,
 		TEAMSTATE_STARTED,
 		TEAMSTATE_FINISHED
 	};
@@ -40,6 +40,7 @@ public:
 	bool SetCharacterTeam(int ClientID, int Team);
 	
 	void ChangeTeamState(int Team, int State);
+	void onChangeTeamState(int Team, int State, int OldState);
 	
 	bool TeamFinished(int Team);
 
@@ -65,6 +66,7 @@ public:
 	void SetCpActive(CPlayer* Player, int CpActive);
 	void OnFinish(CPlayer* Player);
 	bool TeeFinished(int ClientID) { return m_TeeFinished[ClientID]; };
+	int GetTeamState(int Team) { return m_TeamState[Team]; };
 };
 
 #endif
