@@ -367,7 +367,7 @@ void CCharacter::FireWeapon()
 					Direction,//Dir
 					(int)(Server()->TickSpeed()*GameServer()->Tuning()->m_GunLifetime),//Span
 					0,//Freeze
-					0,//Explosive
+					g_Config.m_SvGunExp,//Explosive //iDDRace cheat
 					0,//Force
 					-1,//SoundImpact
 					WEAPON_GUN//Weapon
@@ -498,7 +498,13 @@ void CCharacter::HandleWeapons()
 	}
 
 	// fire Weapon, if wanted
+	//iDDRace
+	if(m_pPlayer->m_IsDummy == true && m_pPlayer->m_DummyUnderControl == false && m_pPlayer->m_DummyCopyMove == false && DoHammerFly == false)
+	{}
+	else
+	{
 	FireWeapon();
+	}
 /*
 	// ammo regen
 	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
@@ -585,7 +591,13 @@ void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 	if(m_NumInputs > 2 && m_pPlayer->GetTeam() != TEAM_SPECTATORS)
 	{
 		HandleWeaponSwitch();
+		//iDDRace
+		if(m_pPlayer->m_IsDummy == true && m_pPlayer->m_DummyUnderControl == false && m_pPlayer->m_DummyCopyMove == false && DoHammerFly == false)
+		{}
+		else
+		{
 		FireWeapon();
+		}
 	}
 
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
@@ -631,6 +643,17 @@ void CCharacter::Tick()
 
 	// handle Weapons
 	HandleWeapons();
+	
+	//iDDRace
+	SavePos();
+	if (m_RescueUnfreeze == 2)
+	{
+		m_RescueUnfreeze = 0;
+		//m_Core.m_Vel = vec2(0,0);
+		UnFreeze();
+	}
+	if (m_RescueUnfreeze == 1)
+		m_RescueUnfreeze = 2;
 
 	DDRacePostCoreTick();
 
@@ -1480,6 +1503,22 @@ void CCharacter::DDRaceTick()
 	}
 
 	m_Core.m_Id = GetPlayer()->GetCID();
+
+	//iDDRace
+	if (!m_pPlayer->m_IsDummy)
+		return;
+	//hammerfly
+	if (DoHammerFly == true && !m_pPlayer->m_DummyCopyMove && !m_pPlayer->m_DummyUnderControl)
+	{
+		if (GetActiveWeapon() != WEAPON_HAMMER)
+			SetActiveWeapon(WEAPON_HAMMER);
+		HammerFly();
+	}
+	else if(DoHammerFly == false && GetActiveWeapon() == WEAPON_HAMMER && !m_pPlayer->m_DummyCopyMove && !m_pPlayer->m_DummyUnderControl)
+	{
+		SetActiveWeapon(WEAPON_GUN);
+		ResetDummy();
+	}
 }
 
 
@@ -1507,6 +1546,15 @@ void CCharacter::DDRacePostCoreTick()
 		// handle Anti-Skip tiles
 		std::list < int > Indices = GameServer()->Collision()->GetMapIndices(m_PrevPos, m_Pos);
 		if(!Indices.empty())
+			//iDDRace
+			CCharacter* pDummyChar = GameServer()->GetPlayerChar(g_Config.m_SvMaxClients - 1 - GetPlayer()->GetCID());
+			//this huge condition blocks handling tiles between owner and dummy on /dc
+			if((GetPlayer()->m_IsDummy || GetPlayer()->m_HasDummy) &&
+				GameServer()->m_apPlayers[g_Config.m_SvMaxClients - 1 - GetPlayer()->GetCID()] &&
+				pDummyChar &&
+				(pDummyChar->m_PrevPos == m_Pos || m_PrevPos == pDummyChar->m_Pos || pDummyChar->m_Pos == m_Pos || pDummyChar->m_PrevPos == m_PrevPos))
+				return;
+
 			for(std::list < int >::iterator i = Indices.begin(); i != Indices.end(); i++)
 			{
 				HandleTiles(*i);
@@ -1595,4 +1643,36 @@ void CCharacter::DDRaceInit()
 	m_EndlessHook = g_Config.m_SvEndlessDrag;
 	m_Hit = g_Config.m_SvHit ? HIT_ALL : DISABLE_HIT_GRENADE|DISABLE_HIT_HAMMER|DISABLE_HIT_RIFLE|DISABLE_HIT_SHOTGUN;
 	Teams()->m_Core.SetSolo(m_pPlayer->GetCID(), false);
+	//iDDRace
+	if (GetPlayer()->m_IsDummy)
+		DummyAngle = 0;
+}
+
+//iDDRace
+void CCharacter::SavePos()
+{
+	if(g_Config.m_SvRescue && m_Pos)
+	{
+		if(!m_FreezeTime && IsGrounded() && m_Pos==m_PrevPos && m_RescueUnfreeze == 0 && m_TileIndex != TILE_FREEZE
+			&& m_TileFIndex != TILE_FREEZE)
+		{
+			m_SavedPos=m_Pos;
+		}
+	}
+}
+void CCharacter::ResetDummy() //need to make dummy inactive
+{
+	m_Input.m_TargetX = 100 * cos(DummyAngle);
+	m_Input.m_TargetY = 100 * sin(DummyAngle);
+	m_Input.m_Fire = 0;
+	m_LatestInput.m_Fire = 0;
+}
+void CCharacter::HammerFly() //Dummy's action
+{
+	m_LatestInput.m_TargetX = 0; //look up
+	m_LatestInput.m_TargetY = -100;
+	m_Input.m_TargetX = 0;
+	m_Input.m_TargetY = -100;
+	m_Input.m_Fire = 1;
+	m_LatestInput.m_Fire = 1;
 }

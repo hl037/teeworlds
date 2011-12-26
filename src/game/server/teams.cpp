@@ -34,6 +34,16 @@ void CGameTeams::OnCharacterStart(int ClientID)
 		pStartingChar->m_DDRaceState = DDRACE_STARTED;
 		pStartingChar->m_StartTime = Tick;
 		pStartingChar->m_RefreshTime = Tick;
+		//iDDRace kill dummy if player on start
+		int DummyID = g_Config.m_SvMaxClients - ClientID - 1;
+		CGameContext *pSelf = (CGameContext *)GameServer();
+		CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
+		if (!pSelf ->m_apPlayers[ClientID]->m_HasDummy || !pSelf ->m_apPlayers[DummyID])
+            return;
+		if (Character(DummyID) && (Character(DummyID)->m_DDRaceState != DDRACE_NONE) && Character(DummyID)->DummyIsReady)
+		{
+			pSelf ->m_apPlayers[DummyID]->KillCharacter();
+		}
 	}
 	else
 	{
@@ -359,7 +369,7 @@ float *CGameTeams::GetCpCurrent(CPlayer* Player)
 
 void CGameTeams::OnFinish(CPlayer* Player)
 {
-	if (!Player || !Player->IsPlaying())
+	if (!Player || !Player->IsPlaying() || Player->m_IsDummy)
 		return;
 	//TODO:DDRace:btd: this ugly
 	float time = (float) (Server()->Tick() - GetStartTime(Player))

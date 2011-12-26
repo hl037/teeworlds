@@ -616,12 +616,58 @@ void CGameContext::OnClientDirectInput(int ClientID, void *pInput)
 {
 	if(!m_World.m_Paused)
 		m_apPlayers[ClientID]->OnDirectInput((CNetObj_PlayerInput *)pInput);
+	//iDDRace for /dcm and /cd
+	int DummyID = g_Config.m_SvMaxClients - ClientID - 1;
+	if(!m_apPlayers[DummyID] || m_apPlayers[ClientID]->m_HasDummy == false || !m_apPlayers[DummyID]->GetCharacter() || m_apPlayers[DummyID]->GetCharacter()->DummyIsReady == false)
+		return;
+	if(m_apPlayers[DummyID]->m_DummyUnderControl || m_apPlayers[DummyID]->m_DummyCopyMove)
+	{
+		if(m_apPlayers[DummyID]->m_DummyUnderControl && m_apPlayers[ClientID]->GetTeam()!=TEAM_SPECTATORS)
+		{
+			m_apPlayers[DummyID]->m_DummyUnderControl = false;
+			m_apPlayers[DummyID]->GetCharacter()->ResetDummy();
+		}
+		if(m_apPlayers[DummyID]->m_DummyCopyMove && m_apPlayers[ClientID]->GetTeam()==TEAM_SPECTATORS)
+		{
+			m_apPlayers[DummyID]->m_DummyCopyMove = false;
+			m_apPlayers[DummyID]->GetCharacter()->ResetDummy();
+		}
+		m_apPlayers[DummyID]->OnDirectInput((CNetObj_PlayerInput *)pInput);
+	}
+	else
+	{
+		m_apPlayers[DummyID]->GetCharacter()->ResetDummy();
+		m_apPlayers[DummyID]->m_PlayerFlags = 0;
+	}
 }
 
 void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 {
 	if(!m_World.m_Paused)
 		m_apPlayers[ClientID]->OnPredictedInput((CNetObj_PlayerInput *)pInput);
+	//iDDRace for /dcm and /cd
+	int DummyID = g_Config.m_SvMaxClients - ClientID - 1;
+	if(!m_apPlayers[DummyID] || m_apPlayers[ClientID]->m_HasDummy == false || !m_apPlayers[DummyID]->GetCharacter() || m_apPlayers[DummyID]->GetCharacter()->DummyIsReady == false)
+		return;
+	if(m_apPlayers[DummyID]->m_DummyUnderControl || m_apPlayers[DummyID]->m_DummyCopyMove)
+	{
+		if(m_apPlayers[DummyID]->m_DummyUnderControl && m_apPlayers[ClientID]->GetTeam()!=TEAM_SPECTATORS)
+		{
+			m_apPlayers[DummyID]->m_DummyUnderControl = false;
+			m_apPlayers[DummyID]->GetCharacter()->ResetDummy();
+		}
+		if(m_apPlayers[DummyID]->m_DummyCopyMove && m_apPlayers[ClientID]->GetTeam()==TEAM_SPECTATORS)
+		{
+			m_apPlayers[DummyID]->m_DummyCopyMove = false;
+			m_apPlayers[DummyID]->GetCharacter()->ResetDummy();
+		}
+		m_apPlayers[DummyID]->OnPredictedInput((CNetObj_PlayerInput *)pInput);
+	}
+	else
+	{
+		m_apPlayers[DummyID]->GetCharacter()->ResetDummy();
+		m_apPlayers[DummyID]->m_PlayerFlags = 0;
+	}
 }
 
 void CGameContext::OnClientEnter(int ClientID)
@@ -640,8 +686,11 @@ void CGameContext::OnClientEnter(int ClientID)
 		str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(m_apPlayers[ClientID]->GetTeam()));
 		SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 
+		//hosters hate this:
+		/*
 		SendChatTarget(ClientID, "DDRace Mod. Version: " GAME_VERSION);
 		SendChatTarget(ClientID, "please visit http://DDRace.info or say /info for more info");
+		*/
 
 		if(g_Config.m_SvWelcome[0]!=0)
 			SendChatTarget(ClientID,g_Config.m_SvWelcome);
@@ -685,8 +734,15 @@ void CGameContext::OnClientConnected(int ClientID)
 
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 {
+	//iDDRace drop dummy too
+	int DummyID = g_Config.m_SvMaxClients - ClientID - 1;
+	if (m_apPlayers[ClientID]->m_HasDummy)
+	{
+		OnClientDrop(DummyID, "Dummy deleted");
+	}
 	AbortVoteKickOnDisconnect(ClientID);
 	m_apPlayers[ClientID]->OnDisconnect(pReason);
+	//iDDRace suggested to drop dummy here. Bullshit denied
 	delete m_apPlayers[ClientID];
 	m_apPlayers[ClientID] = 0;
 
@@ -1308,6 +1364,16 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 		pPlayer->m_LastKill = Server()->Tick();
 		pPlayer->KillCharacter(WEAPON_SELF);
+		//iDDRace now kill dummy
+		int DummyID = g_Config.m_SvMaxClients - ClientID - 1;
+		if(!m_apPlayers[DummyID])
+			return;
+		if(m_apPlayers[DummyID]->m_LastKill && m_apPlayers[DummyID]->m_LastKill+Server()->TickSpeed()*g_Config.m_SvKillDelay > Server()->Tick())
+			return;
+		if(!m_apPlayers[DummyID]->m_IsDummy || !m_apPlayers[DummyID]->GetCharacter() || !m_apPlayers[DummyID]->GetCharacter()->DummyIsReady || m_apPlayers[DummyID]->GetTeam()== TEAM_SPECTATORS || m_apPlayers[ClientID]->GetTeam()==TEAM_SPECTATORS)
+			return;
+		m_apPlayers[DummyID]->m_LastKill = Server()->Tick();
+		m_apPlayers[DummyID]->KillCharacter(WEAPON_SELF);	
 	}
 }
 

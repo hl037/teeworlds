@@ -750,9 +750,12 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				}
 
 				// reserved slot
-				if(ClientID >= (g_Config.m_SvMaxClients - g_Config.m_SvReservedSlots) && g_Config.m_SvReservedSlotsPass[0] != 0 && strcmp(g_Config.m_SvReservedSlotsPass, pPassword) != 0)
+				if(ClientID >= (g_Config.m_SvMaxClients - g_Config.m_SvReservedSlots - g_Config.m_SvMaxClients * 0.5 * g_Config.m_SvDummies) && g_Config.m_SvReservedSlotsPass[0] != 0 && strcmp(g_Config.m_SvReservedSlotsPass, pPassword) != 0)
 				{
-					m_NetServer.Drop(ClientID, "This server is full");
+					if (g_Config.m_SvDummy)
+						m_NetServer.Drop(ClientID, "Dummy server is full. Wait for somebody leave.");
+					else
+						m_NetServer.Drop(ClientID, "This server is full");
 					return;
 				}
 
@@ -1053,7 +1056,7 @@ void CServer::SendServerInfo(NETADDR *pAddr, int Token)
 	str_format(aBuf, sizeof(aBuf), "%d", i);
 	p.AddString(aBuf, 2);
 
-	int MaxClients = m_NetServer.MaxClients();
+	int MaxClients = m_NetServer.MaxClients() - g_Config.m_SvDummies * m_NetServer.MaxClients() * 0.5; //if dummy server, only half of places are for players
 	if (ClientCount >= VANILLA_MAX_CLIENTS)
 	{
 		if (ClientCount < MaxClients)
