@@ -53,6 +53,7 @@ public:
 	bool TeamFinished(int Team);
 
 	int64_t TeamMask(int Team, int ExceptID = -1, int Asker = -1);
+
 	int Count(int Team) const;
 
 	//need to be very carefull using this method
