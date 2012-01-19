@@ -290,8 +290,6 @@ int CGameTeams::GetDDRaceState(CPlayer* Player)
 	CCharacter* pChar = Player->GetCharacter();
 	if (pChar)
 		return pChar->m_DDRaceState;
-	else if (Player->m_InfoSaved)
-		return Player->m_PauseInfo.m_DDRaceState;
 	return DDRACE_NONE;
 }
 
@@ -303,8 +301,6 @@ void CGameTeams::SetDDRaceState(CPlayer* Player, int DDRaceState)
 	CCharacter* pChar = Player->GetCharacter();
 	if (pChar)
 		pChar->m_DDRaceState = DDRaceState;
-	else if (Player->m_InfoSaved)
-		Player->m_PauseInfo.m_DDRaceState = DDRaceState;
 }
 
 int CGameTeams::GetStartTime(CPlayer* Player)
@@ -315,8 +311,6 @@ int CGameTeams::GetStartTime(CPlayer* Player)
 	CCharacter* pChar = Player->GetCharacter();
 	if (pChar)
 		return pChar->m_StartTime;
-	else if (Player->m_InfoSaved)
-		return Player->m_PauseInfo.m_StartTime;
 	return 0;
 }
 
@@ -328,8 +322,6 @@ void CGameTeams::SetStartTime(CPlayer* Player, int StartTime)
 	CCharacter* pChar = Player->GetCharacter();
 	if (pChar)
 		pChar->m_StartTime = StartTime;
-	else if (Player->m_InfoSaved)
-		Player->m_PauseInfo.m_StartTime = StartTime;
 }
 
 void CGameTeams::SetRefreshTime(CPlayer* Player, int RefreshTime)
@@ -340,8 +332,6 @@ void CGameTeams::SetRefreshTime(CPlayer* Player, int RefreshTime)
 	CCharacter* pChar = Player->GetCharacter();
 	if (pChar)
 		pChar->m_RefreshTime = RefreshTime;
-	/*else if(Player->m_InfoSaved)
-	 Player->m_PauseInfo.m_RefreshTime = RefreshTime;*/
 }
 
 void CGameTeams::SetCpActive(CPlayer* Player, int CpActive)
@@ -352,8 +342,6 @@ void CGameTeams::SetCpActive(CPlayer* Player, int CpActive)
 	CCharacter* pChar = Player->GetCharacter();
 	if (pChar)
 		pChar->m_CpActive = CpActive;
-	else if (Player->m_InfoSaved)
-		Player->m_PauseInfo.m_CpActive = CpActive;
 }
 
 float *CGameTeams::GetCpCurrent(CPlayer* Player)
@@ -364,8 +352,6 @@ float *CGameTeams::GetCpCurrent(CPlayer* Player)
 	CCharacter* pChar = Player->GetCharacter();
 	if (pChar)
 		return pChar->m_CpCurrent;
-	else if (Player->m_InfoSaved)
-		return Player->m_PauseInfo.m_CpCurrent;
 	return NULL;
 }
 
@@ -429,7 +415,7 @@ void CGameTeams::OnFinish(CPlayer* Player)
 	}
 
 	if (CallSaveScore)
-		if (str_comp_num(Server()->ClientName(Player->GetCID()), "nameless tee",
+		if (g_Config.m_SvNamelessScore || str_comp_num(Server()->ClientName(Player->GetCID()), "nameless tee",
 				12) != 0)
 			GameServer()->Score()->SaveScore(Player->GetCID(), time,
 					GetCpCurrent(Player));
@@ -440,7 +426,7 @@ void CGameTeams::OnFinish(CPlayer* Player)
 			|| time < GameServer()->m_pController->m_CurrentRecord)
 	{
 		// check for nameless
-		if (str_comp_num(Server()->ClientName(Player->GetCID()), "nameless tee",
+		if (g_Config.m_SvNamelessScore || str_comp_num(Server()->ClientName(Player->GetCID()), "nameless tee",
 				12) != 0)
 		{
 			GameServer()->m_pController->m_CurrentRecord = time;
