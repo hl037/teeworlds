@@ -28,6 +28,8 @@ void CGameTeams::OnCharacterStart(int ClientID)
 		return;
 	if (pStartingChar->m_DDRaceState == DDRACE_FINISHED)
 		pStartingChar->m_DDRaceState = DDRACE_NONE;
+	if (pStartingChar->m_DDRaceState == DDRACE_STARTED) // if we started before and now start again
+		pStartingChar->m_SavedPos = vec2(0,0); // clear pos saved for /r
 	if (m_Core.Team(ClientID) == TEAM_FLOCK
 			|| m_Core.Team(ClientID) == TEAM_SUPER)
 	{

@@ -166,6 +166,10 @@ void CGameContext::ConDummyChange(IConsole::IResult *pResult, void *pUserData)
 				{
 					pChr->m_FreezeTime = pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_FreezeTime;
 				}
+
+				//if ddrace not started and we swap, it can mean that player want to pass start without time
+				if(pChr->m_DDRaceState != DDRACE_STARTED)
+					pChr->m_SavedPos = vec2(0,0); //so we clear his /r saved pos
 				pChr->m_ChangePos = pSelf->m_apPlayers[15 - ClientID]->m_ViewPos;
 				pSelf->CreatePlayerSpawn(pSelf->GetPlayerChar(15 - ClientID)->Core()->m_Pos);
 				pDum->m_PrevPos = pChr->Core()->m_Pos;//TIGROW edit
