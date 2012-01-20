@@ -647,12 +647,12 @@ void CGameContext::OnClientDirectInput(int ClientID, void *pInput)
 		return;
 	if(m_apPlayers[15 - ClientID]->m_DummyUnderControl || m_apPlayers[15 - ClientID]->m_DummyCopyMove)
 	{
-		if(m_apPlayers[15 - ClientID]->m_DummyUnderControl && m_apPlayers[ClientID]->GetTeam()!=TEAM_SPECTATORS)
+		if(m_apPlayers[15 - ClientID]->m_DummyUnderControl && m_apPlayers[ClientID]->m_Paused != CPlayer::PAUSED_PAUSED)
 		{
 			m_apPlayers[15 - ClientID]->m_DummyUnderControl = false;
 			m_apPlayers[15 - ClientID]->GetCharacter()->ResetDummy();
 		}
-		if(m_apPlayers[15 - ClientID]->m_DummyCopyMove && m_apPlayers[ClientID]->GetTeam()==TEAM_SPECTATORS)
+		if(m_apPlayers[15 - ClientID]->m_DummyCopyMove && m_apPlayers[ClientID]->m_Paused == CPlayer::PAUSED_PAUSED)
 		{
 			m_apPlayers[15 - ClientID]->m_DummyCopyMove = false;
 			m_apPlayers[15 - ClientID]->GetCharacter()->ResetDummy();
@@ -675,12 +675,12 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 		return;
 	if(m_apPlayers[15 - ClientID]->m_DummyUnderControl || m_apPlayers[15 - ClientID]->m_DummyCopyMove)
 	{
-		if(m_apPlayers[15 - ClientID]->m_DummyUnderControl && m_apPlayers[ClientID]->GetTeam()!=TEAM_SPECTATORS)
+		if(m_apPlayers[15 - ClientID]->m_DummyUnderControl && m_apPlayers[ClientID]->m_Paused != CPlayer::PAUSED_PAUSED)
 		{
 			m_apPlayers[15 - ClientID]->m_DummyUnderControl = false;
 			m_apPlayers[15 - ClientID]->GetCharacter()->ResetDummy();
 		}
-		if(m_apPlayers[15 - ClientID]->m_DummyCopyMove && m_apPlayers[ClientID]->GetTeam()==TEAM_SPECTATORS)
+		if(m_apPlayers[15 - ClientID]->m_DummyCopyMove && m_apPlayers[ClientID]->m_Paused == CPlayer::PAUSED_PAUSED)
 		{
 			m_apPlayers[15 - ClientID]->m_DummyCopyMove = false;
 			m_apPlayers[15 - ClientID]->GetCharacter()->ResetDummy();

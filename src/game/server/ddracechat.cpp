@@ -83,10 +83,12 @@ void CGameContext::ConDummy(IConsole::IResult *pResult, void *pUserData)
 			return;
 		CCharacter* pChr = pPlayer->GetCharacter();
 		if(pPlayer->GetTeam()!=TEAM_SPECTATORS &&
+		pPlayer->m_Paused == CPlayer::PAUSED_NONE &&
 		pChr && pSelf ->m_apPlayers[15 - ClientID] && 
 		pSelf->GetPlayerChar(15 - ClientID) &&
-		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true
-		&& pSelf ->m_apPlayers[15 - ClientID]->GetTeam()!=TEAM_SPECTATORS)
+		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true &&
+		pSelf ->m_apPlayers[15 - ClientID]->GetTeam()!=TEAM_SPECTATORS &&
+		pSelf ->m_apPlayers[15 - ClientID]->CPlayer::PAUSED_NONE)
 		{
 			if(pPlayer->m_Last_Dummy + pSelf->Server()->TickSpeed() * g_Config.m_SvDummyDelay/2 <= pSelf->Server()->Tick()) 
 			{
@@ -149,36 +151,39 @@ void CGameContext::ConDummyChange(IConsole::IResult *pResult, void *pUserData)
 	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
 	if(!pPlayer)
 		return;   
-	if (pSelf ->m_apPlayers[ClientID]->m_HasDummy && pPlayer->GetTeam()!=TEAM_SPECTATORS)
+	if (pPlayer->m_HasDummy && 
+		pPlayer->GetTeam()!=TEAM_SPECTATORS && 
+		pPlayer->m_Paused == CPlayer::PAUSED_NONE)
 	{
 		CCharacter* pChr = pPlayer->GetCharacter();
 		if(pChr && pSelf ->m_apPlayers[15 - ClientID] && 
 		pSelf->GetPlayerChar(15 - ClientID) &&
-		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true
-		&& pSelf ->m_apPlayers[15 - ClientID]->GetTeam()!=TEAM_SPECTATORS)
+		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true &&
+		pSelf ->m_apPlayers[15 - ClientID]->GetTeam()!=TEAM_SPECTATORS &&
+		pSelf ->m_apPlayers[15 - ClientID]->m_Paused == CPlayer::PAUSED_NONE)
 		{
-			CCharacter* pDum = pSelf->m_apPlayers[15 - ClientID]->GetCharacter();
-			if(pDum->m_TileIndex == TILE_END || pDum->m_TileFIndex == TILE_END)
+			CCharacter* pDumChr = pSelf->m_apPlayers[15 - ClientID]->GetCharacter();
+			if(pDumChr->m_TileIndex == TILE_END || pDumChr->m_TileFIndex == TILE_END)
 				return;
 			if(pPlayer->m_Last_DummyChange + pSelf->Server()->TickSpeed() * g_Config.m_SvDummyChangeDelay/2 <= pSelf->Server()->Tick()) 
 			{
-				if(pDum->m_TileFIndex == TILE_FREEZE || pDum->m_TileIndex == TILE_FREEZE)
+				if(pDumChr->m_TileFIndex == TILE_FREEZE || pDumChr->m_TileIndex == TILE_FREEZE)
 				{
-					pChr->m_FreezeTime = pSelf->m_apPlayers[15 - ClientID]->GetCharacter()->m_FreezeTime;
+					pChr->m_FreezeTime = pDumChr->m_FreezeTime;
 				}
 
 				//if ddrace not started and we swap, it can mean that player want to pass start without time
 				if(pChr->m_DDRaceState != DDRACE_STARTED)
 					pChr->m_SavedPos = vec2(0,0); //so we clear his /r saved pos
 				pChr->m_ChangePos = pSelf->m_apPlayers[15 - ClientID]->m_ViewPos;
-				pSelf->CreatePlayerSpawn(pSelf->GetPlayerChar(15 - ClientID)->Core()->m_Pos);
-				pDum->m_PrevPos = pChr->Core()->m_Pos;//TIGROW edit
-				pSelf->GetPlayerChar(15 - ClientID)->Core()->m_Pos = pSelf->m_apPlayers[ClientID]->m_ViewPos;
+				pSelf->CreatePlayerSpawn(pDumChr->Core()->m_Pos);
+				pDumChr->m_PrevPos = pChr->Core()->m_Pos;//TIGROW edit
+				pDumChr->Core()->m_Pos = pSelf->m_apPlayers[ClientID]->m_ViewPos;
 				pSelf->CreatePlayerSpawn(pChr->Core()->m_Pos);
 				pChr->m_PrevPos = pChr->m_ChangePos;//TIGROW edit
 				pSelf->GetPlayerChar(ClientID)->Core()->m_Pos = pChr->m_ChangePos;
 				pPlayer->m_Last_DummyChange = pSelf->Server()->Tick();
-				pSelf->GetPlayerChar(15 - ClientID)->m_DDRaceState = DDRACE_STARTED; //important
+				pDumChr->m_DDRaceState = DDRACE_STARTED; //important
 			}
 			else
 				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "dummy change", "You can\'t /dummy_change that often.");
