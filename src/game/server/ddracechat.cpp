@@ -215,55 +215,32 @@ void CGameContext::ConDummyControl(IConsole::IResult *pResult, void *pUserData)
 {
 	if (!g_Config.m_SvControlDummy)
 		return;
-	//this chat command need check and be updated, makes crashes
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!CheckClientID(pResult->m_ClientID)) return;
+	CGameContext *pSelf = (CGameContext *) pUserData;
+	if (!CheckClientID(pResult->m_ClientID))
+		return;
 	int ClientID = pResult->m_ClientID;
 	char aBuf[128];
-	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
-	if(!pPlayer)
-		return;
 
+	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
+	if (!pPlayer)
+		return;
 	CCharacter* pChr = pPlayer->GetCharacter();
 	if (pSelf ->m_apPlayers[ClientID]->m_HasDummy &&
-		//pSelf ->m_apPlayers[15 - ClientID] && 
 		pSelf->GetPlayerChar(15 - ClientID) &&
 		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true)
 	{
-		if(!pPlayer->GetTeam() && pChr && (!pChr->GetWeaponGot(WEAPON_NINJA) || pChr->m_FreezeTime) && pChr->IsGrounded() && pChr->m_Pos==pChr->m_PrevPos && !pPlayer->m_InfoSaved)
+		if(pPlayer->m_Paused == CPlayer::PAUSED_PAUSED)
 		{
-			if(pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvPauseFrequency <= pSelf->Server()->Tick())
-			{
-				pPlayer->SaveCharacter();
-				pPlayer->m_InfoSaved = true;
-				pPlayer->SetTeam(TEAM_SPECTATORS);
-				pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl = true;
-				pSelf->GetPlayerChar(15 - ClientID)->m_DDRaceState = DDRACE_STARTED; //important
-				pPlayer->m_SpectatorID = (15 - ClientID);
-			}
-			else
-				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", "You can\'t use dummy control that often.");
-		}
-		else if(pPlayer->GetTeam()==TEAM_SPECTATORS && pPlayer->m_InfoSaved && pPlayer->m_ForcePauseTime == 0)
-		{
-			pPlayer->m_PauseInfo.m_Respawn = true;
-			pPlayer->SetTeam(TEAM_RED);
-			pPlayer->m_InfoSaved = false;
 			pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl = false;
+			pPlayer->m_Paused = CPlayer::PAUSED_NONE;
 		}
-		else if(pChr)
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", pChr->GetWeaponGot(WEAPON_NINJA)?"You can't use /pause while you are a ninja":(!pChr->IsGrounded())?"You can't use /pause while you are a in air":"You can't use /pause while you are moving");
-		else if(pPlayer->m_ForcePauseTime > 0)
+		if(pPlayer->m_Paused == CPlayer::PAUSED_NONE)
 		{
-			str_format(aBuf, sizeof(aBuf), "You have been force-paused. %ds left.", pPlayer->m_ForcePauseTime/pSelf->Server()->TickSpeed());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", aBuf);
+			pSelf ->m_apPlayers[15 - ClientID]->m_DummyUnderControl = true;
+			pSelf->GetPlayerChar(15 - ClientID)->m_DDRaceState = DDRACE_STARTED; //important
+			pPlayer->m_SpectatorID = (15 - ClientID);
+			pPlayer->m_Paused = CPlayer::PAUSED_PAUSED;
 		}
-		else if(pPlayer->m_ForcePauseTime < 0)
-		{
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", "You have been force-paused.");
-		}
-		else
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "control dummy", "No pause data saved.");
 	}
 	else 
 	{
