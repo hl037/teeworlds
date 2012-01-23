@@ -88,7 +88,7 @@ void CGameContext::ConDummy(IConsole::IResult *pResult, void *pUserData)
 		pSelf->GetPlayerChar(15 - ClientID) &&
 		pSelf->GetPlayerChar(15 - ClientID)->DummyIsReady == true &&
 		pSelf ->m_apPlayers[15 - ClientID]->GetTeam()!=TEAM_SPECTATORS &&
-		pSelf ->m_apPlayers[15 - ClientID]->CPlayer::PAUSED_NONE)
+		pSelf ->m_apPlayers[15 - ClientID]->m_Paused == CPlayer::PAUSED_NONE)
 		{
 			if(pPlayer->m_Last_Dummy + pSelf->Server()->TickSpeed() * g_Config.m_SvDummyDelay/2 <= pSelf->Server()->Tick()) 
 			{
