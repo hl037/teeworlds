@@ -180,7 +180,10 @@ void CGameContext::ConDummyChange(IConsole::IResult *pResult, void *pUserData)
 
 				//if ddrace not started and we swap, it can mean that player want to pass start without time
 				if(pChr->m_DDRaceState != DDRACE_STARTED)
+				{
 					pChr->m_SavedPos = vec2(0,0); //so we clear his /r saved pos
+					pPlayer->m_DisableTeams = true; //and not allow him enter teams (prevent cheating)
+				}
 				pChr->m_ChangePos = pSelf->m_apPlayers[DummyID]->m_ViewPos;
 				pSelf->CreatePlayerSpawn(pDumChr->Core()->m_Pos);
 				pDumChr->m_PrevPos = pChr->Core()->m_Pos;//TIGROW edit
@@ -810,6 +813,11 @@ void CGameContext::ConJoinTeam(IConsole::IResult *pResult, void *pUserData)
 			{
 				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "join",
 						"You can\'t join teams that fast!");
+			}
+			else if(pPlayer->m_DisableTeams == true)
+			{
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "join",
+						"Are you going to cheat with time? :P");
 			}
 			else if (((CGameControllerDDRace*) pSelf->m_pController)->m_Teams.SetCharacterTeam(
 					pPlayer->GetCID(), pResult->GetInteger(0)))

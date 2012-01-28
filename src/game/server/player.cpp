@@ -62,6 +62,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	//iDDRace
 	m_Last_Dummy = 0;
 	m_Last_DummyChange = 0;
+	m_DisableTeams = false;
 }
 
 CPlayer::~CPlayer()
@@ -388,6 +389,7 @@ void CPlayer::TryRespawn()
 		if (GameServer()->m_apPlayers[15 - m_ClientID]->GetCharacter()) //MAP94 edit
 			((CGameControllerDDRace*)GameServer()->m_pController)->m_Teams.SetCharacterTeam(m_ClientID, GameServer()->m_apPlayers[15 - m_ClientID]->GetCharacter()->Team());
 	}
+	m_DisableTeams = false;
 }
 
 bool CPlayer::AfkTimer(int NewTargetX, int NewTargetY)

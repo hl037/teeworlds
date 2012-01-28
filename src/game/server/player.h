@@ -159,6 +159,7 @@ public:
 	bool m_DummyCopyMove;
 	int64 m_Last_Dummy; //for control frequency of using /d
 	int64 m_Last_DummyChange; //for control frequency of using /dc
+	bool m_DisableTeams; //true - forbid player enter team.
 };
 
 #endif
