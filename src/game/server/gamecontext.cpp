@@ -652,7 +652,9 @@ void CGameContext::OnClientDirectInput(int ClientID, void *pInput)
 			m_apPlayers[15 - ClientID]->m_DummyUnderControl = false;
 			m_apPlayers[15 - ClientID]->GetCharacter()->ResetDummy();
 		}
-		if(m_apPlayers[15 - ClientID]->m_DummyCopyMove && m_apPlayers[ClientID]->m_Paused == CPlayer::PAUSED_PAUSED)
+		if(m_apPlayers[15 - ClientID]->m_DummyCopyMove && 
+			m_apPlayers[ClientID]->m_Paused == CPlayer::PAUSED_PAUSED &&
+			((CGameControllerDDRace*) m_pController)->m_Teams.m_Core.Team(ClientID) == ((CGameControllerDDRace*) m_pController)->m_Teams.m_Core.Team(15 - ClientID))
 		{
 			m_apPlayers[15 - ClientID]->m_DummyCopyMove = false;
 			m_apPlayers[15 - ClientID]->GetCharacter()->ResetDummy();
@@ -680,7 +682,9 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 			m_apPlayers[15 - ClientID]->m_DummyUnderControl = false;
 			m_apPlayers[15 - ClientID]->GetCharacter()->ResetDummy();
 		}
-		if(m_apPlayers[15 - ClientID]->m_DummyCopyMove && m_apPlayers[ClientID]->m_Paused == CPlayer::PAUSED_PAUSED)
+		if(m_apPlayers[15 - ClientID]->m_DummyCopyMove && 
+			m_apPlayers[ClientID]->m_Paused == CPlayer::PAUSED_PAUSED &&
+			((CGameControllerDDRace*) m_pController)->m_Teams.m_Core.Team(ClientID) == ((CGameControllerDDRace*) m_pController)->m_Teams.m_Core.Team(15 - ClientID))
 		{
 			m_apPlayers[15 - ClientID]->m_DummyCopyMove = false;
 			m_apPlayers[15 - ClientID]->GetCharacter()->ResetDummy();
