@@ -465,7 +465,9 @@ void IGameController::Tick()
 				float PD = aTScore[M];
 				for(int i = 0; i < MAX_CLIENTS; i++)
 				{
-					if(!GameServer()->m_apPlayers[i] || !CanBeMovedOnBalance(i))
+					//Shahan server-side bots
+					/* Added || i> 16 condition. I strongly recommend to replace it by "|| !GameServer()->m_apPlayers[i]->m_IsBot", but not sure if it will work*/
+					if(!GameServer()->m_apPlayers[i] || !CanBeMovedOnBalance(i) || i>=16)//Shahan server-side bot
 						continue;
 					// remember the player who would cause lowest score-difference
 					if(GameServer()->m_apPlayers[i]->GetTeam() == M && (!pP || absolute((aTScore[M^1]+aPScore[i]) - (aTScore[M]-aPScore[i])) < PD))
@@ -505,6 +507,8 @@ void IGameController::Tick()
 			{
 				if(Server()->Tick() > GameServer()->m_apPlayers[i]->m_LastActionTick+g_Config.m_SvInactiveKickTime*Server()->TickSpeed()*60)
 				{
+					if (i >=16) ////Shahan server-side bots not check bots for inactivity
+						return;
 					switch(g_Config.m_SvInactiveKick)
 					{
 					case 0:

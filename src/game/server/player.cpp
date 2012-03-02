@@ -42,7 +42,7 @@ void CPlayer::Tick()
 #ifdef CONF_DEBUG
 	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS-g_Config.m_DbgDummies)
 #endif
-	if(!Server()->ClientIngame(m_ClientID))
+	if(!Server()->ClientIngame(m_ClientID) && !m_IsBot) //Shahan server-side bots
 		return;
 
 	Server()->SetClientScore(m_ClientID, m_Score);
@@ -123,7 +123,7 @@ void CPlayer::Snap(int SnappingClient)
 #ifdef CONF_DEBUG
 	if(!g_Config.m_DbgDummies || m_ClientID < MAX_CLIENTS-g_Config.m_DbgDummies)
 #endif
-	if(!Server()->ClientIngame(m_ClientID))
+	if(!Server()->ClientIngame(m_ClientID) && !m_IsBot)//Shahan server-side bots
 		return;
 
 	int id = m_ClientID;
@@ -133,20 +133,38 @@ void CPlayer::Snap(int SnappingClient)
 
 	if(!pClientInfo)
 		return;
-
-	StrToInts(&pClientInfo->m_Name0, 4, Server()->ClientName(m_ClientID));
-	StrToInts(&pClientInfo->m_Clan0, 3, Server()->ClientClan(m_ClientID));
-	pClientInfo->m_Country = Server()->ClientCountry(m_ClientID);
-	StrToInts(&pClientInfo->m_Skin0, 6, m_TeeInfos.m_SkinName);
-	pClientInfo->m_UseCustomColor = m_TeeInfos.m_UseCustomColor;
-	pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
-	pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
+	
+	if(m_IsBot) //Shahan server-side bots
+	{
+		StrToInts(&pClientInfo->m_Name0, 4, g_Config.m_SvBotName);
+		StrToInts(&pClientInfo->m_Clan0, 3, g_Config.m_SvBotClan);
+		pClientInfo->m_Country = g_Config.m_SvBotCountry;
+		StrToInts(&pClientInfo->m_Skin0, 6, g_Config.m_SvBotSkin);
+		pClientInfo->m_UseCustomColor = g_Config.m_SvBotUseCustomColor;
+		pClientInfo->m_ColorBody = g_Config.m_SvBotColorBody;
+		pClientInfo->m_ColorFeet = g_Config.m_SvBotColorFeet;
+	}
+	else
+	{
+		StrToInts(&pClientInfo->m_Name0, 4, Server()->ClientName(m_ClientID));
+		StrToInts(&pClientInfo->m_Clan0, 3, Server()->ClientClan(m_ClientID));
+		pClientInfo->m_Country = Server()->ClientCountry(m_ClientID);
+		StrToInts(&pClientInfo->m_Skin0, 6, m_TeeInfos.m_SkinName);
+		pClientInfo->m_UseCustomColor = m_TeeInfos.m_UseCustomColor;
+		pClientInfo->m_ColorBody = m_TeeInfos.m_ColorBody;
+		pClientInfo->m_ColorFeet = m_TeeInfos.m_ColorFeet;
+	}
 
 	CNetObj_PlayerInfo *pPlayerInfo = static_cast<CNetObj_PlayerInfo *>(Server()->SnapNewItem(NETOBJTYPE_PLAYERINFO, id, sizeof(CNetObj_PlayerInfo)));
 	if(!pPlayerInfo)
 		return;
 
-	pPlayerInfo->m_Latency = SnappingClient == -1 ? m_Latency.m_Min : GameServer()->m_apPlayers[SnappingClient]->m_aActLatency[m_ClientID];
+	if (m_IsBot) //Shahan server-side bots
+	{
+		pPlayerInfo->m_Latency = 10; //why not?
+	}
+	else
+		pPlayerInfo->m_Latency = SnappingClient == -1 ? m_Latency.m_Min : GameServer()->m_apPlayers[SnappingClient]->m_aActLatency[m_ClientID];
 	pPlayerInfo->m_Local = 0;
 	pPlayerInfo->m_ClientID = id;
 	pPlayerInfo->m_Score = m_Score;
@@ -319,4 +337,8 @@ void CPlayer::TryRespawn()
 	m_pCharacter = new(m_ClientID) CCharacter(&GameServer()->m_World);
 	m_pCharacter->Spawn(this, SpawnPos);
 	GameServer()->CreatePlayerSpawn(SpawnPos);
+	
+	//Shahan server-side bots
+	if (m_IsBot)
+		m_pCharacter->BotIsReady = true;
 }

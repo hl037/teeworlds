@@ -108,6 +108,11 @@ private:
 	bool m_Spawning;
 	int m_ClientID;
 	int m_Team;
+
+//Shahan server-side bots
+public:
+	bool m_IsBot;
+	char m_BotName[32];//don't remember if it used..
 };
 
 #endif

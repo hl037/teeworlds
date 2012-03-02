@@ -614,7 +614,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		else
 			Team = CGameContext::CHAT_ALL;
 
-		if(g_Config.m_SvSpamprotection && pPlayer->m_LastChat && pPlayer->m_LastChat+Server()->TickSpeed() > Server()->Tick())
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastChat && pPlayer->m_LastChat+Server()->TickSpeed() > Server()->Tick() && pMsg->m_pMessage[0]!='/') //Shahan edit: don't mute chat commands
 			return;
 
 		pPlayer->m_LastChat = Server()->Tick();
@@ -627,8 +627,37 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				*pMessage = ' ';
 			pMessage++;
 		}
+		//Shahan server-side bots: chat commands
+		if (str_comp(pMsg->m_pMessage, "/d") == 0)
+		{
+			//drop firstly clients from slots for dummies
+			for (int i=16; i<31; i++)
+			{
+				if (m_apPlayers[i] && m_apPlayers[i]->m_IsBot == false)
+				{
+					OnClientDrop(i, "Cleared slot for bot");
+					return;
+				}
+			}
+			//now spawn red dummy
+			int StartID = 16;
+			while (m_apPlayers[StartID] && m_apPlayers[StartID]->m_IsBot == true && StartID < 31)
+				StartID++;
+			if (m_apPlayers[StartID] && m_apPlayers[StartID]->m_IsBot == true) //16 bots exist
+			{
+				SendChatTarget(ClientID, "No slots for bots");
+			}
+			else
+			{
+				OnClientConnected(StartID);
+				m_apPlayers[StartID]->m_IsBot = true;
+				SendChatTarget(ClientID, "You called bot");
+			}
 
-		SendChat(ClientID, Team, pMsg->m_pMessage);
+			SendChatTarget(ClientID, "You called bot to spawn, chat cmd works");//dbg
+		}
+		else
+			SendChat(ClientID, Team, pMsg->m_pMessage);
 	}
 	else if(MsgID == NETMSGTYPE_CL_CALLVOTE)
 	{
@@ -715,7 +744,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if (!Server()->ReverseTranslate(KickID, ClientID))
 				return;
 
-			if(KickID < 0 || KickID >= MAX_CLIENTS || !m_apPlayers[KickID])
+			if(KickID < 0 || KickID >= MAX_CLIENTS || !m_apPlayers[KickID] || KickID >=16)//Shahan server-side bots: not kick bots
 			{
 				SendChatTarget(ClientID, "Invalid client id to kick");
 				return;
@@ -757,7 +786,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if (!Server()->ReverseTranslate(SpectateID, ClientID))
 				return;
 
-			if(SpectateID < 0 || SpectateID >= MAX_CLIENTS || !m_apPlayers[SpectateID] || m_apPlayers[SpectateID]->GetTeam() == TEAM_SPECTATORS)
+			if(SpectateID < 0 || SpectateID >= MAX_CLIENTS || !m_apPlayers[SpectateID] || m_apPlayers[SpectateID]->GetTeam() == TEAM_SPECTATORS || SpectateID >= 16) //Shahan server-side bots: not move bots to spect
 			{
 				SendChatTarget(ClientID, "Invalid client id to move");
 				return;
@@ -865,6 +894,15 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	}
 	else if (MsgID == NETMSGTYPE_CL_STARTINFO)
 	{
+		//Shahan server-side bots
+		/*if(pPlayer->m_IsBot == true)
+		{
+			pPlayer->m_IsReady = true;
+			CNetMsg_Sv_ReadyToEnter m;
+			Server()->SendPackMsg(&m, MSGFLAG_VITAL|MSGFLAG_FLUSH, ClientID);
+			return;
+		}*/
+
 		if(pPlayer->m_IsReady)
 			return;
 
@@ -1346,7 +1384,7 @@ void CGameContext::ConForceVote(IConsole::IResult *pResult, void *pUserData)
 	{
 		int KickID = str_toint(pValue);
 		//Server()->ReverseTranslate(KickID, ClientID);
-		if(KickID < 0 || KickID >= MAX_CLIENTS || !pSelf->m_apPlayers[KickID])
+		if(KickID < 0 || KickID >= MAX_CLIENTS || !pSelf->m_apPlayers[KickID] || KickID >=16) //Shahan server-side bots: not kick bots
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", "Invalid client id to kick");
 			return;
@@ -1369,7 +1407,7 @@ void CGameContext::ConForceVote(IConsole::IResult *pResult, void *pUserData)
 	{
 		int SpectateID = str_toint(pValue);
 		//Server()->ReverseTranslate(SpectateID, ClientID);
-		if(SpectateID < 0 || SpectateID >= MAX_CLIENTS || !pSelf->m_apPlayers[SpectateID] || pSelf->m_apPlayers[SpectateID]->GetTeam() == TEAM_SPECTATORS)
+		if(SpectateID < 0 || SpectateID >= MAX_CLIENTS || !pSelf->m_apPlayers[SpectateID] || pSelf->m_apPlayers[SpectateID]->GetTeam() == TEAM_SPECTATORS || SpectateID >= 16) //Shahan server-side bots: not move bots to spect
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", "Invalid client id to move");
 			return;

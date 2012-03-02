@@ -108,4 +108,15 @@ MACRO_CONFIG_INT(DbgGraphs, dbg_graphs, 0, 0, 1, CFGFLAG_CLIENT, "Performance gr
 MACRO_CONFIG_INT(DbgHitch, dbg_hitch, 0, 0, 0, CFGFLAG_SERVER, "Hitch warnings")
 MACRO_CONFIG_STR(DbgStressServer, dbg_stress_server, 32, "localhost", CFGFLAG_CLIENT, "Server to stress")
 MACRO_CONFIG_INT(DbgResizable, dbg_resizable, 0, 0, 0, CFGFLAG_CLIENT, "Enables window resizing")
+
+//Shahan server-side bots
+//snap info
+MACRO_CONFIG_STR(SvBotName, sv_bot_name, 16, "Server-side bot", CFGFLAG_SERVER, "Name of the server-side bot")
+MACRO_CONFIG_STR(SvBotClan, sv_bot_clan, 12, "", CFGFLAG_SERVER, "Clan of the server-side bot")
+MACRO_CONFIG_INT(SvBotCountry, sv_bot_country, -1, -1, 1000, CFGFLAG_SERVER, "Country of the server-side bot")
+MACRO_CONFIG_INT(SvBotUseCustomColor, sv_bot_use_custom_color, 0, 0, 1, CFGFLAG_SERVER, "Toggles usage of custom colors for server-side bot")
+MACRO_CONFIG_INT(SvBotColorBody, sv_bot_color_body, 65408, 0, 0xFFFFFF, CFGFLAG_SERVER, "Server-side bot's body color")
+MACRO_CONFIG_INT(SvBotColorFeet, sv_bot_color_feet, 65408, 0, 0xFFFFFF, CFGFLAG_SERVER, "Server-side bot's feet color")
+MACRO_CONFIG_STR(SvBotSkin, sv_bot_skin, 24, "default", CFGFLAG_SERVER, "Server-side bot's skin")
+
 #endif

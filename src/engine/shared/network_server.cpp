@@ -218,6 +218,10 @@ int CNetServer::Send(CNetChunk *pChunk)
 	}
 	else
 	{
+		//Shahan server-side bots
+		if (pChunk->m_ClientID >= 15 && pChunk->m_ClientID < 32)
+			return 0;
+
 		int Flags = 0;
 		dbg_assert(pChunk->m_ClientID >= 0, "errornous client id");
 		dbg_assert(pChunk->m_ClientID < MaxClients(), "errornous client id");
