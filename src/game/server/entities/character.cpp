@@ -753,6 +753,20 @@ void CCharacter::TickDefered()
 	}
 }
 
+void CCharacter::TickPaused()
+{
+	++m_AttackTick;
+	++m_DamageTakenTick;
+	++m_Ninja.m_ActivationTick;
+	++m_ReckoningTick;
+	if(m_LastAction != -1)
+		++m_LastAction;
+	if(m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart > -1)
+		++m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart;
+	if(m_EmoteStop > -1)
+		++m_EmoteStop;
+}
+
 bool CCharacter::IncreaseHealth(int Amount)
 {
 	if(m_Health >= 10)
@@ -1265,6 +1279,7 @@ void CCharacter::HandleTiles(int Index)
 				GameServer()->SendChatTarget(GetPlayer()->GetCID(),"Server admin requires you to be in a team and with other tees to start");
 				m_LastStartWarning = Server()->Tick();
 			}
+			Die(GetPlayer()->GetCID(), WEAPON_WORLD);
 			CanBegin = false;
 		}
 		if(CanBegin)
@@ -1637,6 +1652,7 @@ void CCharacter::Pause(bool Pause)
 	}
 	else
 	{
+		m_Core.m_Vel = vec2(0,0);
 		GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = &m_Core;
 		GameServer()->m_World.InsertEntity(this);
 	}

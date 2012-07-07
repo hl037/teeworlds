@@ -181,6 +181,7 @@ public:
 	void Kick(int ClientID, const char *pReason);
 
 	void DemoRecorder_HandleAutoStart();
+	bool DemoRecorder_IsRecording();
 
 	//int Tick()
 	int64 TickStartTime(int Tick);
@@ -254,10 +255,6 @@ public:
 	int m_aPrevStates[MAX_CLIENTS];
 	char *GetAnnouncementLine(char const *FileName);
 	unsigned m_AnnouncementLastLine;
-
-	static void ConAddBanmaster(IConsole::IResult *pResult, void *pUser);
-	static void ConBanmasters(IConsole::IResult *pResult, void *pUser);
-	static void ConClearBanmasters(IConsole::IResult *pResult, void *pUser);
 };
 
 #endif

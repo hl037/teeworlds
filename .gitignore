@@ -18,7 +18,7 @@ mastersrv*
 packetgen*
 teeworlds*
 teeworlds_srv*
-tileset_borderfix*
+tileset_border*
 versionsrv*
 
 Debug
@@ -48,6 +48,5 @@ bam.exe
 *.cmd
 .settings
 *.opensdf
-banmaster*
 
 DDRace*

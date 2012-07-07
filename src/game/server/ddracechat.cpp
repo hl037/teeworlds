@@ -623,6 +623,7 @@ void CGameContext::ConTogglePause(IConsole::IResult *pResult, void *pUserData)
 	{
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "pause",
 	"You can't pause while you are dead/a spectator.");
+	return;
 	}
 	if (pPlayer->m_Paused == CPlayer::PAUSED_SPEC && g_Config.m_SvPauseable)
 	{
@@ -654,6 +655,7 @@ void CGameContext::ConToggleSpec(IConsole::IResult *pResult, void *pUserData)
 	{
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "spec",
 	"You can't spec while you are dead/a spectator.");
+	return;
 	}
 
 	if(pPlayer->m_Paused == CPlayer::PAUSED_FORCE)
@@ -685,7 +687,7 @@ void CGameContext::ConTop5(IConsole::IResult *pResult, void *pUserData)
 		return;
 	}
 
-	if (pResult->NumArguments() > 0)
+	if (pResult->NumArguments() > 0 && pResult->GetInteger(0) >= 0)
 		pSelf->Score()->ShowTop5(pResult, pResult->m_ClientID, pUserData,
 				pResult->GetInteger(0));
 	else
@@ -792,6 +794,8 @@ void CGameContext::ConJoinTeam(IConsole::IResult *pResult, void *pUserData)
 	if (!CheckClientID(pResult->m_ClientID))
 		return;
 
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
+
 	if (pSelf->m_VoteCloseTime && pSelf->m_VoteCreator == pResult->m_ClientID)
 	{
 		pSelf->Console()->Print(
@@ -806,14 +810,14 @@ void CGameContext::ConJoinTeam(IConsole::IResult *pResult, void *pUserData)
 				"Admin has disabled teams");
 		return;
 	}
-	else if (g_Config.m_SvTeam == 2)
+	else if (g_Config.m_SvTeam == 2 && pResult->GetInteger(0) == 0 && pPlayer->GetCharacter()->m_LastStartWarning < pSelf->Server()->Tick() - 3 * pSelf->Server()->TickSpeed())
 	{
 		pSelf->Console()->Print(
 				IConsole::OUTPUT_LEVEL_STANDARD,
 				"join",
-				"You must join to any team and play with anybody or you will not play");
+				"You must join a team and play with somebody or else you can\'t play");
+		pPlayer->GetCharacter()->m_LastStartWarning = pSelf->Server()->Tick();
 	}
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
 
 	if (pResult->NumArguments() > 0)
 	{
@@ -830,7 +834,7 @@ void CGameContext::ConJoinTeam(IConsole::IResult *pResult, void *pUserData)
 					> pSelf->Server()->Tick())
 			{
 				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "join",
-						"You can\'t join teams that fast!");
+						"You can\'t change teams that fast!");
 			}
 			else if(pPlayer->m_DisableTeams == true)
 			{
