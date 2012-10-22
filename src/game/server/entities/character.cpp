@@ -1671,10 +1671,24 @@ void CCharacter::ResetDummy() //need to make dummy inactive
 }
 void CCharacter::HammerFly() //Dummy's action
 {
-	m_LatestInput.m_TargetX = 0; //look up
-	m_LatestInput.m_TargetY = -100;
-	m_Input.m_TargetX = 0;
-	m_Input.m_TargetY = -100;
+	//the character of dummy's owner
+	CCharacter* pOwnerChr = GameServer()->m_apPlayers[15 - GetPlayer()->GetCID()]->GetCharacter();
+	
+	//final target pos
+	vec2 AimPos = pOwnerChr->m_Pos - m_Pos;
+	
+	//follow owner
+	m_LatestInput.m_TargetX = AimPos.x;
+	m_LatestInput.m_TargetY = AimPos.y;
+	m_Input.m_TargetX = AimPos.x;
+	m_Input.m_TargetY = AimPos.y;
+	
+	//no need in shoot if we are not under the owner
+	if (m_Pos.y <= pOwnerChr->m_Pos.y)
+		return;
+
+	//also dummy should hammer on touch, so that's what TODO next
+
 	m_Input.m_Fire = 1;
 	m_LatestInput.m_Fire = 1;
 }
