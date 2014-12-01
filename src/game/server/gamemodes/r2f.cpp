@@ -13,8 +13,6 @@
 CGameControllerR2F::CGameControllerR2F(class CGameContext *pGameServer)
 : IGameController(pGameServer)
 {
-	m_apFlags[0] = 0;
-	m_apFlags[1] = 0;
 	m_pGameType = "R2F";
 	m_GameFlags = GAMEFLAG_TEAMS|GAMEFLAG_FLAGS;
 }
@@ -28,14 +26,14 @@ bool CGameControllerR2F::OnEntity(int Index, vec2 Pos)
 	int Team = -1;
 	if(Index == ENTITY_FLAGSTAND_RED) Team = TEAM_RED;
 	if(Index == ENTITY_FLAGSTAND_BLUE) Team = TEAM_BLUE;
-	if(Team == -1 || m_apFlags[Team])
+	if(Team == -1)
 		return false;
 
    GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG,"game",  "Entity flag");
 	CFlag *F = new CFlag(&GameServer()->m_World, Team);
 	F->m_StandPos = Pos;
 	F->m_Pos = Pos;
-	m_apFlags[Team] = F;
+	m_apFlags.push_back(F);
 	GameServer()->m_World.InsertEntity(F);
    return true;
 }
@@ -98,7 +96,8 @@ void CGameControllerR2F::Tick()
 	if(GameServer()->m_World.m_ResetRequested || GameServer()->m_World.m_Paused)
 		return;
 
-	for(int fi = 0; fi < 2; fi++)
+   int max = m_apFlags.size();
+	for(int fi = 0; fi < max; fi++)
 	{
 		CFlag *F = m_apFlags[fi];
 

@@ -4,11 +4,12 @@
 #define GAME_SERVER_GAMEMODES_R2F_H
 #include <game/server/gamecontroller.h>
 #include <game/server/entity.h>
+#include <vector>
 
 class CGameControllerR2F : public IGameController
 {
 public:
-	class CFlag *m_apFlags[2];
+	std::vector<class CFlag *> m_apFlags;
 
 	CGameControllerR2F(class CGameContext *pGameServer);
 	virtual void DoWincheck();
