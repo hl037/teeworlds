@@ -40,12 +40,23 @@ bool CGameControllerR2F::OnEntity(int Index, vec2 Pos)
 
 int CGameControllerR2F::OnCharacterDeath(CCharacter * pVictim, CPlayer * pKiller, int Weapon)
 {
-   if(pKiller)
+   if(pKiller && pVictim->GetPlayer() != pKiller)
+   {
       pKiller->m_Score++; // normal kill
-   else if(Weapon == WEAPON_SELF)
-		pVictim->GetPlayer()->m_RespawnTick = Server()->Tick()+Server()->TickSpeed()*3.0f;
-   else if(Weapon == ENTITY_FLAGSTAND_RED || Weapon == ENTITY_FLAGSTAND_BLUE)
-      pVictim->GetPlayer()->m_RespawnTick = Server()->Tick()+min(1.0f,Server()->TickSpeed()*0.1f);
+      pVictim->GetPlayer()->m_RespawnTick = Server()->Tick()+Server()->TickSpeed()*2.0f;
+   }
+   else if(pKiller == pVictim->GetPlayer())
+   {
+      if(Weapon == ENTITY_FLAGSTAND_RED || Weapon == ENTITY_FLAGSTAND_BLUE)
+      {
+         pVictim->GetPlayer()->m_RespawnTick = Server()->Tick()+min(1.0f,Server()->TickSpeed()*0.1f);
+      }
+      else
+      {
+         pVictim->GetPlayer()->m_Score--; // suicide kill
+         pVictim->GetPlayer()->m_RespawnTick = Server()->Tick()+Server()->TickSpeed()*3.0f;
+      }
+   }
    else
       pVictim->GetPlayer()->m_RespawnTick = Server()->Tick()+Server()->TickSpeed()*2.0f;
 	return 0;
@@ -128,7 +139,7 @@ void CGameControllerR2F::Tick()
                Server()->ClientName(apCloseCCharacters[i]->GetPlayer()->GetCID()));
             GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
             
-            apCloseCCharacters[i]->Die(-1, (i == TEAM_RED ? ENTITY_FLAGSTAND_RED : ENTITY_FLAGSTAND_BLUE), SOUND_CTF_CAPTURE);
+            apCloseCCharacters[i]->Die(apCloseCCharacters[i]->GetPlayer()->GetCID(), (i == TEAM_RED ? ENTITY_FLAGSTAND_RED : ENTITY_FLAGSTAND_BLUE), SOUND_CTF_CAPTURE);
          }
       }
    }
