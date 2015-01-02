@@ -245,6 +245,7 @@ function build(settings)
 
 	-- build tools (TODO: fix this so we don't get double _d_d stuff)
 	tools_src = Collect("src/tools/*.cpp", "src/tools/*.c")
+   statsystem_src = Collect("src/tools/statsystem/*.cpp", "src/tools/statsystem/*.c")
 
 	client_osxlaunch = {}
 	server_osxlaunch = {}
@@ -258,6 +259,7 @@ function build(settings)
 		toolname = PathFilename(PathBase(v))
 		tools[i] = Link(settings, toolname, Compile(settings, v), engine, zlib, pnglite)
 	end
+   table.insert(tools, Link(settings, "statsystem", Compile(settings, statsystem_src), game_shared, engine, zlib, pnglite))
 
 	-- build client, server, version server and master server
 	client_exe = Link(client_settings, "teeworlds", game_shared, game_client,
