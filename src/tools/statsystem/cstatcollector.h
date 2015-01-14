@@ -41,7 +41,7 @@ public:
 	inline int GameTick() const { return m_CurGameTick; }
    
 public:
-   CStatCollector();
+   CStatCollector(CSnapshotDelta * pSnapShotDelta);
    ~CStatCollector();
    
 	virtual int SnapNumItems(int SnapID);

@@ -25,7 +25,8 @@ int main(int argc, const char * argv[])
    CSnapshotDelta SnapshotDelta;
    
    //Stat collector
-   CStatCollector StatCollector;
+   CStatCollector StatCollector(&SnapshotDelta);
+   
    CDemoPlayer *pDemoPlayer = CreateDemoPlayer(&SnapshotDelta, &StatCollector);
    StatCollector.setDemoPlayer(pDemoPlayer);
    StatCollector.setConsole(pConsole);

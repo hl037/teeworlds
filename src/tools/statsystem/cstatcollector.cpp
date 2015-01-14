@@ -2,11 +2,16 @@
 #include <engine/client.h>
 
 
-CStatCollector::CStatCollector()
+CStatCollector::CStatCollector(CSnapshotDelta * pSnapShotDelta)
 {
    for(int i=0 ; i<NUM_SNAPSHOT_TYPES ; ++i)
    {
       m_aSnapshots[i] = new CSnapshotStorage::CHolder;
+   }
+   
+   for(int i = 0; i < NUM_NETOBJTYPES; i++)
+   {
+		pSnapShotDelta->SetStaticsize(i, m_NetObjHandler.GetObjSize(i));
    }
    
 	m_aSnapshots[SNAP_CURRENT]->m_pSnap = (CSnapshot *)m_Buffers[SNAP_CURRENT][0];
@@ -18,6 +23,7 @@ CStatCollector::CStatCollector()
 	m_aSnapshots[SNAP_PREV]->m_pAltSnap = (CSnapshot *)m_Buffers[SNAP_PREV][1];
 	m_aSnapshots[SNAP_PREV]->m_SnapSize = 0;
 	m_aSnapshots[SNAP_PREV]->m_Tick = -1;
+   
 
 }
 
@@ -80,7 +86,7 @@ void *CStatCollector::SnapFindItem(int SnapID, int Type, int ID)
 
 // void CStatCollector::SnapSetStaticsize(int ItemType, int Size)
 // {
-// 	m_SnapshotDelta.SetStaticsize(ItemType, Size);
+//	 m_SnapshotDelta.SetStaticsize(ItemType, Size);
 // }
 
 
