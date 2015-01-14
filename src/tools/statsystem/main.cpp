@@ -57,7 +57,10 @@ int main(int argc, const char * argv[])
       }
       dbg_msg("Statsystem", "Demo %s loaded succesfuly", *arg);
       pDemoPlayer->Play();
-      while(pDemoPlayer->NextFrame());
+      while(!pDemoPlayer->BaseInfo()->m_Paused)
+      {
+         pDemoPlayer->NextFrame();
+      }
       dbg_msg("Statsystem", "END OF DEMO %s", *arg);
       --argc; ++arg;
    }
