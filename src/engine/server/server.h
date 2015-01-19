@@ -155,7 +155,7 @@ public:
 	int m_CurrentMapSize;
 
 	CDemoRecorder m_DemoRecorder;
-   CGameDataRecorder m_GameDataRecorder;
+   CGamedataRecorder m_GamedataRecorder;
 	CRegister m_Register;
 	CMapChecker m_MapChecker;
 
@@ -172,7 +172,7 @@ public:
 
 	void DemoRecorder_HandleAutoStart();
 	bool DemoRecorder_IsRecording();
-   void GameDataRecorder_addAddr(int ClientID);
+   void GamedataRecorder_addAddr(int ClientID);
 
 	//int Tick()
 	int64 TickStartTime(int Tick);

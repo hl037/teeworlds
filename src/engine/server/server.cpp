@@ -1211,6 +1211,7 @@ int CServer::LoadMap(const char *pMapName)
 
 	// stop recording when we change map
 	m_DemoRecorder.Stop();
+   m_GamedataRecorder.Stop();
 
 	// reinit snapshot ids
 	m_IDPool.TimeoutIDs();
@@ -1475,6 +1476,7 @@ void CServer::DemoRecorder_HandleAutoStart()
 	if(g_Config.m_SvAutoDemoRecord)
 	{
 		m_DemoRecorder.Stop();
+      m_GamedataRecorder.Stop();
 		char aFilename[128];
       char aGameDataFilename[128];
 		char aDate[20];
@@ -1485,7 +1487,11 @@ void CServer::DemoRecorder_HandleAutoStart()
       if(g_Config.m_SvRecordGamedata)
 		{
          str_format(aGameDataFilename, sizeof(aGameDataFilename), "demos/%s_%s.data", "auto/autorecord", aDate);
-         m_GameDataRecorder.Start(Storage(), m_pConsole, aGameDataFilename);
+         m_GamedataRecorder.Start(Storage(), m_pConsole, aGameDataFilename);
+         for(int i = 0 ; i < MAX_CLIENTS ; ++i)
+         {
+            GamedataRecorder_addAddr(i);
+         }
       }
       
       
@@ -1503,32 +1509,47 @@ bool CServer::DemoRecorder_IsRecording()
    return m_DemoRecorder.IsRecording();
 }
 
-void CServer::GameDataRecorder_addAddr(int ClientID)
+void CServer::GamedataRecorder_addAddr(int ClientID)
 {
-   if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+   if(!m_GamedataRecorder.IsRecording() || ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
       return;
-   m_GameDataRecorder.addAddr(ClientName(ClientID), m_NetServer.ClientAddr(ClientID));
+   m_GamedataRecorder.addAddr(ClientName(ClientID), m_NetServer.ClientAddr(ClientID));
 }
 
 void CServer::ConRecord(IConsole::IResult *pResult, void *pUser)
 {
 	CServer* pServer = (CServer *)pUser;
 	char aFilename[128];
+   char aGameDataFilename[128];
 
 	if(pResult->NumArguments())
+   {
 		str_format(aFilename, sizeof(aFilename), "demos/%s.demo", pResult->GetString(0));
+      str_format(aGameDataFilename, sizeof(aGameDataFilename), "demos/%s.data", pResult->GetString(0));
+   }
 	else
 	{
 		char aDate[20];
 		str_timestamp(aDate, sizeof(aDate));
 		str_format(aFilename, sizeof(aFilename), "demos/demo_%s.demo", aDate);
+      str_format(aGameDataFilename, sizeof(aGameDataFilename), "demos/demo_%s.data", aDate);
 	}
 	pServer->m_DemoRecorder.Start(pServer->Storage(), pServer->Console(), aFilename, pServer->GameServer()->NetVersion(), pServer->m_aCurrentMap, pServer->m_CurrentMapCrc, "server");
+   
+   if(g_Config.m_SvRecordGamedata)
+   {
+      pServer->m_GamedataRecorder.Start(pServer->Storage(), pServer->Console(), aGameDataFilename);
+      for(int i = 0 ; i < MAX_CLIENTS ; ++i)
+      {
+         pServer->GamedataRecorder_addAddr(i);
+      }
+   }
 }
 
 void CServer::ConStopRecord(IConsole::IResult *pResult, void *pUser)
 {
 	((CServer *)pUser)->m_DemoRecorder.Stop();
+   ((CServer *)pUser)->m_GamedataRecorder.Stop();
 }
 
 void CServer::ConMapReload(IConsole::IResult *pResult, void *pUser)

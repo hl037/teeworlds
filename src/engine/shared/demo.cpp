@@ -867,7 +867,13 @@ int CDemoPlayer::GetDemoType() const
 }
 
 
-int CGameDataRecorder::Start(IStorage * pStorage, IConsole * pConsole, const char * pFilename)
+CGamedataRecorder::CGamedataRecorder()
+{
+   m_pConsole = 0;
+   m_File = 0;
+}
+
+int CGamedataRecorder::Start(IStorage * pStorage, IConsole * pConsole, const char * pFilename)
 {
    IOHANDLE File = pStorage->OpenFile(pFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
    if(!File)
@@ -881,7 +887,7 @@ int CGameDataRecorder::Start(IStorage * pStorage, IConsole * pConsole, const cha
    return 0;
 }
 
-int CGameDataRecorder::Stop()
+int CGamedataRecorder::Stop()
 {
    if(!m_File)
 		return -1;
@@ -889,7 +895,7 @@ int CGameDataRecorder::Stop()
    return 0;
 }
 
-void CGameDataRecorder::addAddr(const char * pName, NETADDR * pAddr)
+void CGamedataRecorder::addAddr(const char * pName, const NETADDR * pAddr)
 {
    if(!IsRecording())
    {

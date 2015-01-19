@@ -572,6 +572,7 @@ void CGameContext::OnClientConnected(int ClientID)
 	CNetMsg_Sv_Motd Msg;
 	Msg.m_pMessage = g_Config.m_SvMotd;
 	Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
+   Server()->GamedataRecorder_addAddr(ClientID);
 }
 
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
