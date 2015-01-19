@@ -124,4 +124,18 @@ public:
 	int IsPlaying() const { return m_File != 0; }
 };
 
+class CGameDataRecorder
+{
+private:
+   class IConsole *m_pConsole;
+	IOHANDLE m_File;
+   
+public:
+   int Start(class IStorage *pStorage, class IConsole *pConsole, const char *pFilename);
+   int Stop();
+   bool IsRecording() const { return m_File != 0; }
+   
+   void addAddr(const char * pName, NETADDR *pAddr);
+};
+
 #endif
