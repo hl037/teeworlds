@@ -865,3 +865,45 @@ int CDemoPlayer::GetDemoType() const
 		return m_DemoType;
 	return DEMOTYPE_INVALID;
 }
+
+
+int CGameDataRecorder::Start(IStorage * pStorage, IConsole * pConsole, const char * pFilename)
+{
+   IOHANDLE File = pStorage->OpenFile(pFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+   if(!File)
+   {
+      char aBuf[256];
+      str_format(aBuf, sizeof(aBuf), "Unable to open '%s' for recording", pFilename);
+      m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "demo_recorder", aBuf);
+      return -1;
+   }
+   m_File = File;
+   return 0;
+}
+
+int CGameDataRecorder::Stop()
+{
+   if(!m_File)
+		return -1;
+   io_close(m_File);
+   return 0;
+}
+
+void CGameDataRecorder::addAddr(const char * pName, NETADDR * pAddr)
+{
+   if(!IsRecording())
+   {
+      m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game_data_recorder", "Trying to add addr while not recording");
+      return;
+   }
+   char aBuf[256];
+   io_write(m_File, "3", 1);
+   io_write_newline(m_File);
+   io_write(m_File, "addr", 4);
+   io_write_newline(m_File);
+   io_write(m_File, pName, str_length(pName));
+   io_write_newline(m_File);
+   net_addr_str(pAddr, aBuf, sizeof(aBuf), 0);
+   io_write(m_File, aBuf, str_length(aBuf));
+   io_write_newline(m_File);
+}

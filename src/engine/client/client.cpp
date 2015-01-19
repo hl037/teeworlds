@@ -1447,6 +1447,7 @@ void CClient::PumpNetwork()
 
 void CClient::OnDemoPlayerSnapshot(void *pData, int Size)
 {
+   dbg_msg("DEMOPLAYER", "Snap !!!");
 	// update ticks, they could have changed
 	const CDemoPlayer::CPlaybackInfo *pInfo = m_DemoPlayer.Info();
 	CSnapshotStorage::CHolder *pTemp;

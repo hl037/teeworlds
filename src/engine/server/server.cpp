@@ -1476,10 +1476,19 @@ void CServer::DemoRecorder_HandleAutoStart()
 	{
 		m_DemoRecorder.Stop();
 		char aFilename[128];
+      char aGameDataFilename[128];
 		char aDate[20];
 		str_timestamp(aDate, sizeof(aDate));
 		str_format(aFilename, sizeof(aFilename), "demos/%s_%s.demo", "auto/autorecord", aDate);
 		m_DemoRecorder.Start(Storage(), m_pConsole, aFilename, GameServer()->NetVersion(), m_aCurrentMap, m_CurrentMapCrc, "server");
+      
+      if(g_Config.m_SvRecordGamedata)
+		{
+         str_format(aGameDataFilename, sizeof(aGameDataFilename), "demos/%s_%s.data", "auto/autorecord", aDate);
+         m_GameDataRecorder.Start(Storage(), m_pConsole, aGameDataFilename);
+      }
+      
+      
 		if(g_Config.m_SvAutoDemoMax)
 		{
 			// clean up auto recorded demos
@@ -1491,7 +1500,14 @@ void CServer::DemoRecorder_HandleAutoStart()
 
 bool CServer::DemoRecorder_IsRecording()
 {
-	return m_DemoRecorder.IsRecording();
+   return m_DemoRecorder.IsRecording();
+}
+
+void CServer::GameDataRecorder_addAddr(int ClientID)
+{
+   if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+      return;
+   m_GameDataRecorder.addAddr(ClientName(ClientID), m_NetServer.ClientAddr(ClientID));
 }
 
 void CServer::ConRecord(IConsole::IResult *pResult, void *pUser)
