@@ -115,11 +115,13 @@ public:
 		CInput m_aInputs[200]; // TODO: handle input better
 		int m_CurrentInput;
 
+      char m_aUserAcc[MAX_USER_ACC_LENGTH];
 		char m_aName[MAX_NAME_LENGTH];
+      char m_aDispName[MAX_NAME_LENGTH]; // Name formated
 		char m_aClan[MAX_CLAN_LENGTH];
 		int m_Country;
 		int m_Score;
-		int m_Authed;
+		int m_Authed; //rcon
 		int m_AuthTries;
 
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
@@ -160,7 +162,7 @@ public:
 
 	CServer();
 
-	int TrySetClientName(int ClientID, const char *pName);
+	int TrySetClientDispName(int ClientID, const char *pName);
 
 	virtual void SetClientName(int ClientID, const char *pName);
 	virtual void SetClientClan(int ClientID, char const *pClan);

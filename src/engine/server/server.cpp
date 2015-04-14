@@ -289,41 +289,24 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 }
 
 
-int CServer::TrySetClientName(int ClientID, const char *pName)
+int CServer::TrySetClientDispName(int ClientID, const char *pDispName)
 {
-	char aTrimmedName[64];
-
-	// trim the name
-	str_copy(aTrimmedName, StrLtrim(pName), sizeof(aTrimmedName));
-	StrRtrim(aTrimmedName);
-
 	// check for empty names
-	if(!aTrimmedName[0])
+	if(!pDispName[0])
 		return -1;
-
-	// check if new and old name are the same
-	if(m_aClients[ClientID].m_aName[0] && str_comp(m_aClients[ClientID].m_aName, aTrimmedName) == 0)
-		return 0;
-
-	char aBuf[256];
-	str_format(aBuf, sizeof(aBuf), "'%s' -> '%s'", pName, aTrimmedName);
-	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "server", aBuf);
-	pName = aTrimmedName;
 
 	// make sure that two clients doesn't have the same name
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		if(i != ClientID && m_aClients[i].m_State >= CClient::STATE_READY)
 		{
-			if(str_comp(pName, m_aClients[i].m_aName) == 0)
+			if(str_comp(pDispName, m_aClients[i].m_aDispName) == 0)
 				return -1;
 		}
 
-	// set the client name
-	str_copy(m_aClients[ClientID].m_aName, pName, MAX_NAME_LENGTH);
+	// set the client disp name
+   str_copy(m_aClients[ClientID].m_aDispName, pDispName, sizeof(m_aClients[ClientID].m_aDispName));
 	return 0;
 }
-
-
 
 void CServer::SetClientName(int ClientID, const char *pName)
 {
@@ -333,25 +316,63 @@ void CServer::SetClientName(int ClientID, const char *pName)
 	if(!pName)
 		return;
 
+   char * pDispName;
 	char aCleanName[MAX_NAME_LENGTH];
-	str_copy(aCleanName, pName, sizeof(aCleanName));
-
-	// clear name
-	for(char *p = aCleanName; *p; ++p)
-	{
-		if(*p < 32)
-			*p = ' ';
-	}
-
-	if(TrySetClientName(ClientID, aCleanName))
+	
+	// clean name
+	int lastpos = 0;
+   {
+      int i = 0;
+      const char *psrc = pName; 
+      char *pdst = aCleanName;
+      for(; *psrc != '\0' && *psrc<=' '; ++psrc);
+      while(*psrc != '\0' && i<sizeof(aCleanName)-1)
+      {
+         if(*psrc <= ' ')
+         {
+            *pdst = ' ';
+         }
+         else
+         {
+            *pdst = *psrc;
+            lastpos = i+1;
+         }
+			++psrc;
+			++pdst;
+			++i;
+      }
+      aCleanName[lastpos] = '\0'; //Rtrim
+   }
+   
+   // set real name
+   str_copy(m_aClients[ClientID].m_aName, aCleanName, sizeof(aCleanName));
+   
+   // DispName
+	if(m_aClients[ClientID].m_aUserAcc[0] != '\0')
+   {
+      pDispName = m_aClients[ClientID].m_aName;
+   }
+   else
+   {
+      str_percent_format(aCleanName, sizeof(aCleanName), g_Config.m_SvNotAuthedFormat, m_aClients[ClientID].m_aName);
+      pDispName = aCleanName;
+   }
+	
+	if(TrySetClientDispName(ClientID, pDispName))
 	{
 		// auto rename
-		for(int i = 1;; i++)
+      int j = 0;
+      for( ; j<MAX_NAME_LENGTH-3 && aCleanName[j]!='\0' ; ++j);
+      for( ; j<MAX_NAME_LENGTH-3; ++j)
+         aCleanName[j] = ' ';
+      aCleanName[MAX_NAME_LENGTH-3] = '#';
+      aCleanName[MAX_NAME_LENGTH-2] = 'a';
+      aCleanName[MAX_NAME_LENGTH-1] = '\0';
+		for(int i = 0; i<MAX_CLIENTS; ++i) //avoid infinite loop
 		{
-			char aNameTry[MAX_NAME_LENGTH];
-			str_format(aNameTry, sizeof(aCleanName), "(%d)%s", i, aCleanName);
-			if(TrySetClientName(ClientID, aNameTry) == 0)
+			if(TrySetClientDispName(ClientID, aCleanName) == 0)
 				break;
+         ++aCleanName[MAX_NAME_LENGTH-2];
 		}
 	}
 }
@@ -420,7 +441,9 @@ int CServer::Init()
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		m_aClients[i].m_State = CClient::STATE_EMPTY;
+		m_aClients[i].m_aUserAcc[0] = 0;
 		m_aClients[i].m_aName[0] = 0;
+		m_aClients[i].m_aDispName[0] = 0;
 		m_aClients[i].m_aClan[0] = 0;
 		m_aClients[i].m_Country = -1;
 		m_aClients[i].m_Snapshots.Init();
@@ -467,7 +490,10 @@ const char *CServer::ClientName(int ClientID)
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
 		return "(invalid)";
 	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
-		return m_aClients[ClientID].m_aName;
+      if(m_aClients[ClientID].m_aUserAcc[0] != '\0')
+         return m_aClients[ClientID].m_aName;
+      else
+         return m_aClients[ClientID].m_aDispName;
 	else
 		return "(connecting)";
 
@@ -690,7 +716,9 @@ int CServer::NewClientCallback(int ClientID, void *pUser)
 {
 	CServer *pThis = (CServer *)pUser;
 	pThis->m_aClients[ClientID].m_State = CClient::STATE_AUTH;
+	pThis->m_aClients[ClientID].m_aUserAcc[0] = 0;
 	pThis->m_aClients[ClientID].m_aName[0] = 0;
+	pThis->m_aClients[ClientID].m_aDispName[0] = 0;
 	pThis->m_aClients[ClientID].m_aClan[0] = 0;
 	pThis->m_aClients[ClientID].m_Country = -1;
 	pThis->m_aClients[ClientID].m_Authed = AUTHED_NO;
@@ -715,7 +743,9 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 		pThis->GameServer()->OnClientDrop(ClientID, pReason);
 
 	pThis->m_aClients[ClientID].m_State = CClient::STATE_EMPTY;
+	pThis->m_aClients[ClientID].m_aUserAcc[0] = 0;
 	pThis->m_aClients[ClientID].m_aName[0] = 0;
+	pThis->m_aClients[ClientID].m_aDispName[0] = 0;
 	pThis->m_aClients[ClientID].m_aClan[0] = 0;
 	pThis->m_aClients[ClientID].m_Country = -1;
 	pThis->m_aClients[ClientID].m_Authed = AUTHED_NO;

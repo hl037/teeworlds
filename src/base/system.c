@@ -1778,6 +1778,47 @@ void str_timestamp(char *buffer, int buffer_size)
 	buffer[buffer_size-1] = 0;	/* assure null termination */
 }
 
+void str_percent_format(char * buffer, size_t buffer_size, const char *format, const char * rep)
+{
+   int i=0;
+   char * ptr = buffer;
+   char * ptr2;
+   while(i<buffer_size-1 && *format!='\0')
+   {
+      if(*format=='%')
+      {
+         if(*(format+1)=='%')
+         {
+            *(ptr++) = '%';
+            ++i;
+				++format;
+         }
+         else if(*(format+1)=='s')
+         {
+            ptr2 = rep;
+            while(ptr2!='\0' && i<buffer_size-1)
+            {
+               *(ptr++) = *(ptr2++);
+               ++i;
+            }
+				++format;
+         }
+         else
+         {
+            *(ptr++) = '%';
+            ++i;
+         }
+      }
+      else
+      {
+         *(ptr++) = *format;
+         ++i;
+      }
+      ++format;
+   }
+   *ptr = '\0';
+}
+
 int mem_comp(const void *a, const void *b, int size)
 {
 	return memcmp(a,b,size);

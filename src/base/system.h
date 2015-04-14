@@ -986,7 +986,7 @@ const char *str_find(const char *haystack, const char *needle);
 		data - Size of the data
 
 	Remarks:
-		- The desination buffer will be zero-terminated
+		- The detsination buffer will be zero-terminated
 */
 void str_hex(char *dst, int dst_size, const void *data, int data_size);
 
@@ -1002,6 +1002,22 @@ void str_hex(char *dst, int dst_size, const void *data, int data_size);
 		- Guarantees that buffer string will contain zero-termination.
 */
 void str_timestamp(char *buffer, int buffer_size);
+
+/*
+	Function: str_percent_format
+		Replace %s by rep and %% by %
+
+	Parameters:
+		buffer - Pointer to a buffer that shall receive the time stamp string.
+		buffer_size - Size of the buffer.
+      format - Template to use
+      rep - Replacement string
+
+	Remarks:
+		- Guarantees that buffer string will contain zero-termination.
+*/
+void str_percent_format(char * buffer, size_t buffer_size, const char * format, const char * rep);
+
 
 /* Group: Filesystem */
 

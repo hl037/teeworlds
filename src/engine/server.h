@@ -4,6 +4,7 @@
 #define ENGINE_SERVER_H
 #include "kernel.h"
 #include "message.h"
+#include "engine/shared/accountsystem.h"
 
 class IServer : public IInterface
 {
