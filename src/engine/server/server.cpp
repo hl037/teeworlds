@@ -36,26 +36,6 @@
 	#include <windows.h>
 #endif
 
-static const char *StrLtrim(const char *pStr)
-{
-	while(*pStr && *pStr >= 0 && *pStr <= 32)
-		pStr++;
-	return pStr;
-}
-
-static void StrRtrim(char *pStr)
-{
-	int i = str_length(pStr);
-	while(i >= 0)
-	{
-		if(pStr[i] < 0 || pStr[i] > 32)
-			break;
-		pStr[i] = 0;
-		i--;
-	}
-}
-
-
 CSnapIDPool::CSnapIDPool()
 {
 	Reset();
@@ -322,7 +302,7 @@ void CServer::SetClientName(int ClientID, const char *pName)
 	// clean name
 	int lastpos = 0;
    {
-      int i = 0;
+      unsigned int i = 0;
       const char *psrc = pName; 
       char *pdst = aCleanName;
       for(; *psrc != '\0' && *psrc<=' '; ++psrc);
@@ -348,7 +328,7 @@ void CServer::SetClientName(int ClientID, const char *pName)
    str_copy(m_aClients[ClientID].m_aName, aCleanName, sizeof(aCleanName));
    
    // DispName
-	if(m_aClients[ClientID].m_aUserAcc[0] != '\0')
+	if(IsAccAuthed(ClientID))
    {
       pDispName = m_aClients[ClientID].m_aName;
    }
@@ -375,6 +355,36 @@ void CServer::SetClientName(int ClientID, const char *pName)
          ++aCleanName[MAX_NAME_LENGTH-2];
 		}
 	}
+}
+
+int CServer::SetClientToken(int ClientID, const char * pHexString)
+{
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State < CClient::STATE_READY)
+		return -1;
+	unsigned char *pTok = m_aClients[ClientID].m_aToken;
+	int tmp;
+	for(int i=0 ; i<TOKEN_LENGTH ; ++i)
+	{
+		if((tmp = hex2int(*(pHexString++))) < 0)
+			return -1;
+		*pTok = tmp<<4;
+		
+		if((tmp = hex2int(*(pHexString++))) < 0)
+			return -1;
+		*pTok += tmp;
+		++pTok;
+	}
+	return 0;
+}
+
+void CServer::SetClientUserAcc(int ClientID, const char * pUserAcc)
+{
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State < CClient::STATE_READY)
+		return;
+	
+	str_copy(m_aClients[ClientID].m_aUserAcc, pUserAcc, MAX_USER_ACC_LENGTH);
+
+	SetClientName(ClientID, m_aClients[ClientID].m_aName);
 }
 
 void CServer::SetClientClan(int ClientID, const char *pClan)
@@ -442,6 +452,7 @@ int CServer::Init()
 	{
 		m_aClients[i].m_State = CClient::STATE_EMPTY;
 		m_aClients[i].m_aUserAcc[0] = 0;
+		m_aClients[i].m_aToken[0] = 0;
 		m_aClients[i].m_aName[0] = 0;
 		m_aClients[i].m_aDispName[0] = 0;
 		m_aClients[i].m_aClan[0] = 0;
@@ -462,6 +473,19 @@ void CServer::SetRconCID(int ClientID)
 bool CServer::IsAuthed(int ClientID)
 {
 	return m_aClients[ClientID].m_Authed;
+}
+
+bool CServer::IsAccAuthed(int ClientID)
+{
+	return m_aClients[ClientID].m_aUserAcc[0];
+}
+
+int CServer::ClientTimestamp2ID(int64 timestamp)
+{
+	for(int i=0 ; i<MAX_CLIENTS ; ++i)
+		if(ClientTimestamp(i) == timestamp)
+			return i;
+	return -1;
 }
 
 int CServer::GetClientInfo(int ClientID, CClientInfo *pInfo)
@@ -490,13 +514,21 @@ const char *CServer::ClientName(int ClientID)
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
 		return "(invalid)";
 	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
-      if(m_aClients[ClientID].m_aUserAcc[0] != '\0')
+      if(IsAccAuthed(ClientID))
          return m_aClients[ClientID].m_aName;
       else
          return m_aClients[ClientID].m_aDispName;
 	else
 		return "(connecting)";
+	
+}
 
+const char *CServer::ClientUserAcc(int ClientID)
+{
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+		return "(invalid)";
+	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
+      return m_aClients[ClientID].m_aUserAcc;
 }
 
 const char *CServer::ClientClan(int ClientID)
@@ -507,6 +539,13 @@ const char *CServer::ClientClan(int ClientID)
 		return m_aClients[ClientID].m_aClan;
 	else
 		return "";
+}
+
+int64 CServer::ClientTimestamp(int ClientID)
+{
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+		return 0;
+	return m_aClients[ClientID].m_Timestamp;
 }
 
 int CServer::ClientCountry(int ClientID)
@@ -715,8 +754,10 @@ void CServer::DoSnapshot()
 int CServer::NewClientCallback(int ClientID, void *pUser)
 {
 	CServer *pThis = (CServer *)pUser;
+	pThis->m_aClients[ClientID].m_Timestamp = time_get();
 	pThis->m_aClients[ClientID].m_State = CClient::STATE_AUTH;
 	pThis->m_aClients[ClientID].m_aUserAcc[0] = 0;
+	pThis->m_aClients[ClientID].m_aToken[0] = 0;
 	pThis->m_aClients[ClientID].m_aName[0] = 0;
 	pThis->m_aClients[ClientID].m_aDispName[0] = 0;
 	pThis->m_aClients[ClientID].m_aClan[0] = 0;
@@ -744,6 +785,7 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 
 	pThis->m_aClients[ClientID].m_State = CClient::STATE_EMPTY;
 	pThis->m_aClients[ClientID].m_aUserAcc[0] = 0;
+	pThis->m_aClients[ClientID].m_aToken[0] = 0;
 	pThis->m_aClients[ClientID].m_aName[0] = 0;
 	pThis->m_aClients[ClientID].m_aDispName[0] = 0;
 	pThis->m_aClients[ClientID].m_aClan[0] = 0;
@@ -1485,8 +1527,8 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 			{
 				const char *pAuthStr = pThis->m_aClients[i].m_Authed == CServer::AUTHED_ADMIN ? "(Admin)" :
 										pThis->m_aClients[i].m_Authed == CServer::AUTHED_MOD ? "(Mod)" : "";
-				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s name='%s' score=%d %s", i, aAddrStr,
-					pThis->m_aClients[i].m_aName, pThis->m_aClients[i].m_Score, pAuthStr);
+				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s name='%s' score=%d timestamp=%lu %s", i, aAddrStr,
+					pThis->m_aClients[i].m_aName, pThis->m_aClients[i].m_Score, pThis->m_aClients[i].m_Timestamp, pAuthStr);
 			}
 			else
 				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s connecting", i, aAddrStr);
@@ -1572,6 +1614,28 @@ void CServer::ConLogout(IConsole::IResult *pResult, void *pUser)
 	}
 }
 
+void CServer::ConIpFromTimestamp(IConsole::IResult * pResult, void * pUser)
+{
+	CServer *pServer = (CServer *)pUser;
+	
+	int64 timestamp = str_toint64(pResult->GetString(0));
+	int ClientID = pServer->ClientTimestamp2ID(timestamp);
+	if(ClientID < 0)
+	{
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Error=No client for this timestamp ID, ID=%lu", timestamp);
+		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
+	}
+	else
+	{
+		char aBuf[128];
+		char addr[NETADDR_MAXSTRSIZE];
+		pServer->GetClientAddr(ClientID, addr, sizeof(addr));
+		str_format(aBuf, sizeof(aBuf), "ID=%lu, IP=%s", timestamp, addr);
+		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
+	}
+}
+
 void CServer::ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	pfnCallback(pResult, pCallbackUserData);
@@ -1642,6 +1706,8 @@ void CServer::RegisterCommands()
 	Console()->Register("stoprecord", "", CFGFLAG_SERVER, ConStopRecord, this, "Stop recording");
 
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
+	
+	Console()->Register("ip_from_timestamp", "r", CFGFLAG_SERVER, ConIpFromTimestamp, this, "Get ip address from timestamp");
 
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
@@ -1649,6 +1715,7 @@ void CServer::RegisterCommands()
 	Console()->Chain("sv_max_clients_per_ip", ConchainMaxclientsperipUpdate, this);
 	Console()->Chain("mod_command", ConchainModCommandUpdate, this);
 	Console()->Chain("console_output_level", ConchainConsoleOutputLevelUpdate, this);
+	
 
 	// register console commands in sub parts
 	m_ServerBan.InitServerBan(Console(), Storage(), this);

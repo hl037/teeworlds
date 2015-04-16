@@ -116,9 +116,11 @@ public:
 		int m_CurrentInput;
 
       char m_aUserAcc[MAX_USER_ACC_LENGTH];
+		unsigned char m_aToken[TOKEN_LENGTH];
 		char m_aName[MAX_NAME_LENGTH];
       char m_aDispName[MAX_NAME_LENGTH]; // Name formated
 		char m_aClan[MAX_CLAN_LENGTH];
+		int64 m_Timestamp;
 		int m_Country;
 		int m_Score;
 		int m_Authed; //rcon
@@ -165,6 +167,8 @@ public:
 	int TrySetClientDispName(int ClientID, const char *pName);
 
 	virtual void SetClientName(int ClientID, const char *pName);
+	virtual int SetClientToken(int ClientID, const char *pHexString);
+	virtual void SetClientUserAcc(int ClientID, const char *pUserAcc);
 	virtual void SetClientClan(int ClientID, char const *pClan);
 	virtual void SetClientCountry(int ClientID, int Country);
 	virtual void SetClientScore(int ClientID, int Score);
@@ -182,10 +186,14 @@ public:
 
 	void SetRconCID(int ClientID);
 	bool IsAuthed(int ClientID);
+	bool IsAccAuthed(int ClientID);
+	virtual int ClientTimestamp2ID(int64 timestamp);
 	int GetClientInfo(int ClientID, CClientInfo *pInfo);
 	void GetClientAddr(int ClientID, char *pAddrStr, int Size);
 	const char *ClientName(int ClientID);
+	const char *ClientUserAcc(int ClientID);
 	const char *ClientClan(int ClientID);
+	int64 ClientTimestamp(int ClientID);
 	int ClientCountry(int ClientID);
 	bool ClientIngame(int ClientID);
 	int MaxClients() const;
@@ -227,6 +235,7 @@ public:
 	static void ConStopRecord(IConsole::IResult *pResult, void *pUser);
 	static void ConMapReload(IConsole::IResult *pResult, void *pUser);
 	static void ConLogout(IConsole::IResult *pResult, void *pUser);
+	static void ConIpFromTimestamp(IConsole::IResult *pResult, void *pUser);
 	static void ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMaxclientsperipUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainModCommandUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);

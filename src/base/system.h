@@ -1018,6 +1018,17 @@ void str_timestamp(char *buffer, int buffer_size);
 */
 void str_percent_format(char * buffer, size_t buffer_size, const char * format, const char * rep);
 
+/*
+	Function: hex2int
+		Return int value of the hex character c
+
+	Parameters:
+		c - Character to convert
+
+	Returns:
+		value or -1 if not in [a-fA-F0-p]
+*/
+int hex2int(char c);
 
 /* Group: Filesystem */
 
@@ -1215,6 +1226,7 @@ typedef struct
 void net_stats(NETSTATS *stats);
 
 int str_toint(const char *str);
+int64 str_toint64(const char *str);
 float str_tofloat(const char *str);
 int str_isspace(char c);
 char str_uppercase(char c);

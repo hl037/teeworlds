@@ -13,6 +13,7 @@
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"
+#include "engine/shared/accountsystem.h"
 
 enum
 {
@@ -225,7 +226,6 @@ void CGameContext::SendChatTarget(int To, const char *pText)
 	Msg.m_pMessage = pText;
 	Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, To);
 }
-
 
 void CGameContext::SendChat(int ChatterClientID, int Team, const char *pText)
 {
@@ -541,6 +541,14 @@ void CGameContext::OnClientEnter(int ClientID)
 
 	str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), m_apPlayers[ClientID]->GetTeam());
 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
+	
+	SendChatTarget(ClientID, "This server supports Account system");
+	
+	str_format(aBuf, sizeof(aBuf), ACCSYS_FORMAT "v=%s", AccSysVersion());
+	SendChatTarget(ClientID, aBuf);
+	
+	str_format(aBuf, sizeof(aBuf), ACCSYS_FORMAT "ID=%lu", Server()->ClientTimestamp(ClientID));
+	SendChatTarget(ClientID, aBuf);
 
 	m_VoteUpdate = true;
 }
@@ -1429,6 +1437,41 @@ void CGameContext::ConVote(IConsole::IResult *pResult, void *pUserData)
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
 }
 
+void CGameContext::ConAuthAccount(IConsole::IResult * pResult, void * pUser)
+{
+	CGameContext *pSelf = (CGameContext *)pUser;
+	
+	int64 timestamp = str_toint64(pResult->GetString(0));
+	
+	int ClientID = pSelf->Server()->ClientTimestamp2ID(timestamp);
+	if(ClientID < 0)
+	{
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Error=No client for this timestamp ID, ID=%lu", pSelf->Server()->ClientTimestamp(ClientID));
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
+	}
+	else if(pSelf->Server()->SetClientToken(ClientID, pResult->GetString(2)) == -1)
+	{
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Error=Token ill-formed");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
+	}
+	else
+	{
+		char oldName[MAX_NAME_LENGTH];
+		str_copy(oldName, pSelf->Server()->ClientName(ClientID), MAX_NAME_LENGTH);
+		
+		pSelf->Server()->SetClientUserAcc(ClientID, pResult->GetString(1));
+		char aBuf[1024];
+		str_format(aBuf, sizeof(aBuf), "STATUS=AUTHED, ID=%lu, ACC=%s, TOK=%s", timestamp, pSelf->Server()->ClientUserAcc(ClientID),  pResult->GetString(2));
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
+		
+		char aChatText[256];
+		str_format(aChatText, sizeof(aChatText), ACCSYS_FORMAT "'%s' is now authenticated as %s and renamed as %s", oldName, pSelf->Server()->ClientUserAcc(ClientID), pSelf->Server()->ClientName(ClientID));
+		pSelf->SendChat(-1, CGameContext::CHAT_ALL, aChatText);
+	}
+}
+
 void CGameContext::ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData)
 {
 	pfnCallback(pResult, pCallbackUserData);
@@ -1468,6 +1511,7 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("force_vote", "ss?r", CFGFLAG_SERVER, ConForceVote, this, "Force a voting option");
 	Console()->Register("clear_votes", "", CFGFLAG_SERVER, ConClearVotes, this, "Clears the voting options");
 	Console()->Register("vote", "r", CFGFLAG_SERVER, ConVote, this, "Force a vote to yes/no");
+	Console()->Register("auth_account", "ssr", CFGFLAG_SERVER, ConAuthAccount, this, "auth_account <id(timestamp)> <user@account> <token as hex string> Consider the user account as authenticated.");
 
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 }
@@ -1595,5 +1639,6 @@ bool CGameContext::IsClientPlayer(int ClientID)
 const char *CGameContext::GameType() { return m_pController && m_pController->m_pGameType ? m_pController->m_pGameType : ""; }
 const char *CGameContext::Version() { return GAME_VERSION; }
 const char *CGameContext::NetVersion() { return GAME_NETVERSION; }
+const char *CGameContext::AccSysVersion() { return GAME_ACCSYSVERSION; }
 
 IGameServer *CreateGameServer() { return new CGameContext; }

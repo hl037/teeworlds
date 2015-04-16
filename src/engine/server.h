@@ -28,7 +28,11 @@ public:
 
 	virtual int MaxClients() const = 0;
 	virtual const char *ClientName(int ClientID) = 0;
+	virtual const char *ClientUserAcc(int ClientID) = 0;
 	virtual const char *ClientClan(int ClientID) = 0;
+	virtual int64 ClientTimestamp(int ClientID) = 0;
+	virtual int ClientTimestamp2ID(int64 timestamp) = 0;
+	virtual bool IsAccAuthed(int ClientID) = 0;
 	virtual int ClientCountry(int ClientID) = 0;
 	virtual bool ClientIngame(int ClientID) = 0;
 	virtual int GetClientInfo(int ClientID, CClientInfo *pInfo) = 0;
@@ -46,7 +50,9 @@ public:
 	}
 
 	virtual void SetClientName(int ClientID, char const *pName) = 0;
+	virtual int SetClientToken(int ClientID, const char *pHexString) = 0;
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;
+	virtual void SetClientUserAcc(int ClientID, char const *pUserAcc) = 0;
 	virtual void SetClientCountry(int ClientID, int Country) = 0;
 	virtual void SetClientScore(int ClientID, int Score) = 0;
 
@@ -97,6 +103,7 @@ public:
 	virtual const char *GameType() = 0;
 	virtual const char *Version() = 0;
 	virtual const char *NetVersion() = 0;
+	virtual const char *AccSysVersion() = 0;
 };
 
 extern IGameServer *CreateGameServer();
