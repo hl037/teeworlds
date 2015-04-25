@@ -29,9 +29,10 @@ public:
 	virtual int MaxClients() const = 0;
 	virtual const char *ClientName(int ClientID) = 0;
 	virtual const char *ClientUserAcc(int ClientID) = 0;
+	virtual const char *ClientTP(int ClientID) = 0;
 	virtual const char *ClientClan(int ClientID) = 0;
-	virtual int64 ClientTimestamp(int ClientID) = 0;
-	virtual int ClientTimestamp2ID(int64 timestamp) = 0;
+	virtual const unsigned char * ClientConstID(int ClientID) = 0;
+	virtual int ClientConstID2ID(const unsigned char * ConstID) = 0;
 	virtual bool IsAccAuthed(int ClientID) = 0;
 	virtual int ClientCountry(int ClientID) = 0;
 	virtual bool ClientIngame(int ClientID) = 0;
@@ -50,7 +51,7 @@ public:
 	}
 
 	virtual void SetClientName(int ClientID, char const *pName) = 0;
-	virtual int SetClientToken(int ClientID, const char *pHexString) = 0;
+	virtual int SetClientToken(int ClientID, const char *pProvider, const char *pHexString) = 0;
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;
 	virtual void SetClientUserAcc(int ClientID, char const *pUserAcc) = 0;
 	virtual void SetClientCountry(int ClientID, int Country) = 0;

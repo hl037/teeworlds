@@ -94,6 +94,8 @@ MACRO_CONFIG_INT(SvRconBantime, sv_rcon_bantime, 5, 0, 1440, CFGFLAG_SERVER, "Th
 MACRO_CONFIG_INT(SvAutoDemoRecord, sv_auto_demo_record, 0, 0, 1, CFGFLAG_SERVER, "Automatically record demos")
 MACRO_CONFIG_INT(SvAutoDemoMax, sv_auto_demo_max, 10, 0, 1000, CFGFLAG_SERVER, "Maximum number of automatically recorded demos (0 = no limit)")
 MACRO_CONFIG_STR(SvNotAuthedFormat, sv_not_authed_format, 32, "N/A  %s", CFGFLAG_SERVER, "String format to use as name when a player is not authenticated")
+MACRO_CONFIG_STR(SvAuthHost, sv_auth_host, 256, "", CFGFLAG_SERVER, "host:port of the local authentication server")
+MACRO_CONFIG_INT(SvDID, sv_did, 0, 0, 255, CFGFLAG_SERVER, "Server Distinguished ID (used only by Authentication system when multiple teeworlds server share the same authentication server)")
 
 MACRO_CONFIG_STR(EcBindaddr, ec_bindaddr, 128, "localhost", CFGFLAG_ECON, "Address to bind the external console to. Anything but 'localhost' is dangerous")
 MACRO_CONFIG_INT(EcPort, ec_port, 0, 0, 0, CFGFLAG_ECON, "Port to use for the external console")

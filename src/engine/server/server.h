@@ -116,11 +116,12 @@ public:
 		int m_CurrentInput;
 
       char m_aUserAcc[MAX_USER_ACC_LENGTH];
+		unsigned char m_aConstId[CONST_ID_LENGTH];
 		unsigned char m_aToken[TOKEN_LENGTH];
+		char m_aTokenProvider[MAX_TOK_PROVIDER_LENGTH];
 		char m_aName[MAX_NAME_LENGTH];
       char m_aDispName[MAX_NAME_LENGTH]; // Name formated
 		char m_aClan[MAX_CLAN_LENGTH];
-		int64 m_Timestamp;
 		int m_Country;
 		int m_Score;
 		int m_Authed; //rcon
@@ -167,7 +168,7 @@ public:
 	int TrySetClientDispName(int ClientID, const char *pName);
 
 	virtual void SetClientName(int ClientID, const char *pName);
-	virtual int SetClientToken(int ClientID, const char *pHexString);
+	virtual int SetClientToken(int ClientID, const char * pProvider, const char *pHexString);
 	virtual void SetClientUserAcc(int ClientID, const char *pUserAcc);
 	virtual void SetClientClan(int ClientID, char const *pClan);
 	virtual void SetClientCountry(int ClientID, int Country);
@@ -187,13 +188,14 @@ public:
 	void SetRconCID(int ClientID);
 	bool IsAuthed(int ClientID);
 	bool IsAccAuthed(int ClientID);
-	virtual int ClientTimestamp2ID(int64 timestamp);
+	virtual int ClientConstID2ID(const unsigned char * constID);
 	int GetClientInfo(int ClientID, CClientInfo *pInfo);
 	void GetClientAddr(int ClientID, char *pAddrStr, int Size);
 	const char *ClientName(int ClientID);
 	const char *ClientUserAcc(int ClientID);
+	const char *ClientTP(int ClientID);
 	const char *ClientClan(int ClientID);
-	int64 ClientTimestamp(int ClientID);
+	const unsigned char * ClientConstID(int ClientID);
 	int ClientCountry(int ClientID);
 	bool ClientIngame(int ClientID);
 	int MaxClients() const;
@@ -203,6 +205,7 @@ public:
 
 	void DoSnapshot();
 
+	static void genConstID(unsigned char * aConstID, size_t len);
 	static int NewClientCallback(int ClientID, void *pUser);
 	static int DelClientCallback(int ClientID, const char *pReason, void *pUser);
 
@@ -235,7 +238,7 @@ public:
 	static void ConStopRecord(IConsole::IResult *pResult, void *pUser);
 	static void ConMapReload(IConsole::IResult *pResult, void *pUser);
 	static void ConLogout(IConsole::IResult *pResult, void *pUser);
-	static void ConIpFromTimestamp(IConsole::IResult *pResult, void *pUser);
+	static void ConIpFromConstID(IConsole::IResult *pResult, void *pUser);
 	static void ConchainSpecialInfoupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainMaxclientsperipUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainModCommandUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);

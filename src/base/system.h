@@ -1030,6 +1030,35 @@ void str_percent_format(char * buffer, size_t buffer_size, const char * format, 
 */
 int hex2int(char c);
 
+/*
+	Function: base32_to_bytes
+		Translate a base32 string to bytes
+
+	Parameters:
+		bytes - destination buffer
+		maxlen - bytes' buffer size
+		b32 - Base32 representation
+
+	Returns:
+		value or -1 if not in [a-fA-F0-p]
+*/
+void base32_to_bytes(unsigned char * bytes, size_t maxlen, const char * b32);
+
+/*
+	Function: bytes_to_base32
+		Translate put in buffer the Base32 representation of bytes
+
+	Parameters:
+		bytes - destination buffer
+		maxlen - bytes' buffer size
+		b32 - Base32 representation
+		len - b32's len
+
+	Returns:
+		value or -1 if not in [a-fA-F0-p]
+*/
+void bytes_to_base32(char * buffer, size_t maxlen, const unsigned char * bytes, size_t len);
+
 /* Group: Filesystem */
 
 /*

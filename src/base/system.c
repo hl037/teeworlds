@@ -1830,6 +1830,98 @@ int hex2int(char c)
 		return -1;
 }
 
+void base32_to_bytes(unsigned char * bytes, size_t maxlen, const char * b32)
+{
+	unsigned char * ptr = bytes;
+	*ptr = 0;
+	int r = 8;
+	int t;
+	int i;
+	while(maxlen > 0)
+	{
+		if('A' <= *b32 && *b32 <= 'Z')
+		{
+			t = *b32 - 'A';
+		}
+		else if('2' <= *b32 && *b32 <= '7')
+		{
+			t = *b32 - '2' + 26;
+		}
+		else if('a' <= *b32 && *b32 <= 'z')
+		{
+			t = *b32 - 'a';
+		}
+		else
+		{
+			return;
+		}
+		++b32;
+		if(r >= 5)
+		{
+			*ptr |= t << (r - 5);
+			r -= 5;
+			if(r==0)
+			{
+				++ptr;
+				*ptr = 0;
+				--maxlen;
+				r = 8;
+			}
+		}
+		else
+		{
+			unsigned int m = (1 << (5 - r)) - 1;
+			*ptr |= (t >> (5 - r));
+			++ptr;
+			*ptr = 0;
+			--maxlen;
+			*ptr = (t & m) << ((8 - 5) + r);
+			r += 8 - 5;
+		}
+	}
+}
+
+void bytes_to_base32(char * buffer, size_t maxlen, const unsigned char * bytes, size_t len)
+{
+	int r = 8;
+	int t;
+	while(len > 0 && maxlen-1 >0)
+	{
+		if(r>=5)
+		{
+			t = *bytes >> (r - 5);
+			r -= 5;
+			if(r==0)
+			{
+				++bytes;
+				--len;
+				r = 8;
+			}
+		}
+		else
+		{
+			t = *bytes << (5 - r);
+			++bytes;
+			--len;
+			t+= *bytes >> ((8-5) + r);
+			r += 8 - 5;
+		}
+		t %= 32;
+		if(t<26)
+		{
+			*buffer = 'A' + t;
+		}
+		else
+		{
+			*buffer = ('2' - 26) + t;
+		}
+		++buffer;
+		--maxlen;
+	}
+	
+	*buffer = '\0';
+}
+
 int mem_comp(const void *a, const void *b, int size)
 {
 	return memcmp(a,b,size);

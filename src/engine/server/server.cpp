@@ -357,10 +357,11 @@ void CServer::SetClientName(int ClientID, const char *pName)
 	}
 }
 
-int CServer::SetClientToken(int ClientID, const char * pHexString)
+int CServer::SetClientToken(int ClientID, const char * pProvider, const char * pHexString)
 {
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State < CClient::STATE_READY)
 		return -1;
+	str_copy(m_aClients[ClientID].m_aTokenProvider, pProvider, MAX_TOK_PROVIDER_LENGTH);
 	unsigned char *pTok = m_aClients[ClientID].m_aToken;
 	int tmp;
 	for(int i=0 ; i<TOKEN_LENGTH ; ++i)
@@ -480,11 +481,16 @@ bool CServer::IsAccAuthed(int ClientID)
 	return m_aClients[ClientID].m_aUserAcc[0];
 }
 
-int CServer::ClientTimestamp2ID(int64 timestamp)
+int CServer::ClientConstID2ID(const unsigned char * constID)
 {
 	for(int i=0 ; i<MAX_CLIENTS ; ++i)
-		if(ClientTimestamp(i) == timestamp)
+	{
+		const unsigned char * ptr = ClientConstID(i);
+		if(ptr !=0  && mem_comp(ptr,constID, CONST_ID_LENGTH) == 0)
+		{
 			return i;
+		}
+	}
 	return -1;
 }
 
@@ -526,9 +532,21 @@ const char *CServer::ClientName(int ClientID)
 const char *CServer::ClientUserAcc(int ClientID)
 {
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
-		return "(invalid)";
+		return "";
 	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
       return m_aClients[ClientID].m_aUserAcc;
+	else
+		return "";
+}
+
+const char *CServer::ClientTP(int ClientID)
+{
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+		return "";
+	if(m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME)
+      return m_aClients[ClientID].m_aTokenProvider;
+	else
+		return "";
 }
 
 const char *CServer::ClientClan(int ClientID)
@@ -541,11 +559,11 @@ const char *CServer::ClientClan(int ClientID)
 		return "";
 }
 
-int64 CServer::ClientTimestamp(int ClientID)
+const unsigned char * CServer::ClientConstID(int ClientID)
 {
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
 		return 0;
-	return m_aClients[ClientID].m_Timestamp;
+	return m_aClients[ClientID].m_aConstId;
 }
 
 int CServer::ClientCountry(int ClientID)
@@ -749,12 +767,37 @@ void CServer::DoSnapshot()
 
 	GameServer()->OnPostSnap();
 }
+#include <stdio.h>
+void CServer::genConstID(unsigned char * aConstID, size_t len)
+{
+	unsigned char *o = aConstID;
+	if(len<CONST_ID_LENGTH)
+	{
+		printf("\n\n!!!!!!!pb len\n\n");
+		return;
+	}
+	*(aConstID++) = g_Config.m_SvDID;
+	int time = time_timestamp();
+	mem_copy(aConstID, &time, sizeof(int));
+	aConstID += sizeof(int);
+	len -= sizeof(int) + 1;
+	while(len)
+	{
+		*(aConstID++) = rand(); //no need for cryptographic level
+		--len;
+	}
+	for(int i=0 ; i<CONST_ID_LENGTH ; ++i)
+	{
+		printf("\n%d\n", *(o++));
+	}
+	return;
+}
 
 
 int CServer::NewClientCallback(int ClientID, void *pUser)
 {
 	CServer *pThis = (CServer *)pUser;
-	pThis->m_aClients[ClientID].m_Timestamp = time_get();
+	genConstID(pThis->m_aClients[ClientID].m_aConstId, CONST_ID_LENGTH);
 	pThis->m_aClients[ClientID].m_State = CClient::STATE_AUTH;
 	pThis->m_aClients[ClientID].m_aUserAcc[0] = 0;
 	pThis->m_aClients[ClientID].m_aToken[0] = 0;
@@ -1525,10 +1568,12 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 			net_addr_str(pThis->m_NetServer.ClientAddr(i), aAddrStr, sizeof(aAddrStr), true);
 			if(pThis->m_aClients[i].m_State == CClient::STATE_INGAME)
 			{
+				char aBuf2[32];
 				const char *pAuthStr = pThis->m_aClients[i].m_Authed == CServer::AUTHED_ADMIN ? "(Admin)" :
 										pThis->m_aClients[i].m_Authed == CServer::AUTHED_MOD ? "(Mod)" : "";
-				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s name='%s' score=%d timestamp=%lu %s", i, aAddrStr,
-					pThis->m_aClients[i].m_aName, pThis->m_aClients[i].m_Score, pThis->m_aClients[i].m_Timestamp, pAuthStr);
+				bytes_to_base32(aBuf2, sizeof(aBuf2), pThis->ClientConstID(i), CONST_ID_LENGTH);
+				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s name='%s' score=%d ConstID=%s %s", i, aAddrStr,
+					pThis->m_aClients[i].m_aName, pThis->m_aClients[i].m_Score, aBuf2, pAuthStr);
 			}
 			else
 				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s connecting", i, aAddrStr);
@@ -1614,16 +1659,17 @@ void CServer::ConLogout(IConsole::IResult *pResult, void *pUser)
 	}
 }
 
-void CServer::ConIpFromTimestamp(IConsole::IResult * pResult, void * pUser)
+void CServer::ConIpFromConstID(IConsole::IResult * pResult, void * pUser)
 {
 	CServer *pServer = (CServer *)pUser;
 	
-	int64 timestamp = str_toint64(pResult->GetString(0));
-	int ClientID = pServer->ClientTimestamp2ID(timestamp);
+	unsigned char aID[CONST_ID_LENGTH];
+	base32_to_bytes(aID, CONST_ID_LENGTH, pResult->GetString(0));
+	int ClientID = pServer->ClientConstID2ID(aID);
 	if(ClientID < 0)
 	{
 		char aBuf[128];
-		str_format(aBuf, sizeof(aBuf), "Error=No client for this timestamp ID, ID=%lu", timestamp);
+		str_format(aBuf, sizeof(aBuf), "Error=No client for this ConstID, CosntID=%s", pResult->GetString(0));
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
 	}
 	else
@@ -1631,7 +1677,7 @@ void CServer::ConIpFromTimestamp(IConsole::IResult * pResult, void * pUser)
 		char aBuf[128];
 		char addr[NETADDR_MAXSTRSIZE];
 		pServer->GetClientAddr(ClientID, addr, sizeof(addr));
-		str_format(aBuf, sizeof(aBuf), "ID=%lu, IP=%s", timestamp, addr);
+		str_format(aBuf, sizeof(aBuf), "ConstID=%s, IP=%s", aID, addr);
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
 	}
 }
@@ -1707,7 +1753,7 @@ void CServer::RegisterCommands()
 
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
 	
-	Console()->Register("ip_from_timestamp", "r", CFGFLAG_SERVER, ConIpFromTimestamp, this, "Get ip address from timestamp");
+	Console()->Register("ip_from_constid", "r", CFGFLAG_SERVER, ConIpFromConstID, this, "Get ip address from ConstID");
 
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
