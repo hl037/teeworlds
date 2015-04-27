@@ -548,7 +548,7 @@ void CGameContext::OnClientEnter(int ClientID)
 		SendChatTarget(ClientID, "This server supports Account system");
 		
 		bytes_to_base32(aBuf2, sizeof(aBuf2), Server()->ClientConstID(ClientID), CONST_ID_LENGTH);
-		str_format(aBuf, sizeof(aBuf), ACCSYS_FORMAT "v=%s, ConstID=%s, host=%s", AccSysVersion(), aBuf2, g_Config.m_SvAuthHost);
+		str_format(aBuf, sizeof(aBuf), ACCSYS_FORMAT "hello!v=%s, ConstID=%s, host=%s", AccSysVersion(), aBuf2, g_Config.m_SvAuthHost);
 		SendChatTarget(ClientID, aBuf);
 	}
 	m_VoteUpdate = true;
@@ -1449,13 +1449,13 @@ void CGameContext::ConAuthAccount(IConsole::IResult * pResult, void * pUser)
 	if(ClientID < 0)
 	{
 		char aBuf[128];
-		str_format(aBuf, sizeof(aBuf), "Error=No client for this ConstID, ConstID=%s", pResult->GetString(0));
+		str_format(aBuf, sizeof(aBuf), "auth_account!Error=No client for this ConstID, ConstID=%s", pResult->GetString(0));
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
 	}
 	else if(pSelf->Server()->SetClientToken(ClientID, pResult->GetString(2), pResult->GetString(3)) == -1)
 	{
 		char aBuf[128];
-		str_format(aBuf, sizeof(aBuf), "Error=Token ill-formed");
+		str_format(aBuf, sizeof(aBuf), "auth_account!Error=Token ill-formed");
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
 	}
 	else
@@ -1465,11 +1465,11 @@ void CGameContext::ConAuthAccount(IConsole::IResult * pResult, void * pUser)
 		
 		pSelf->Server()->SetClientUserAcc(ClientID, pResult->GetString(1));
 		char aBuf[1024];
-		str_format(aBuf, sizeof(aBuf), "STATUS=AUTHED, ConstID=%s, ACC=%s, TP=%s, TOK=%s", pResult->GetString(0), pSelf->Server()->ClientUserAcc(ClientID), pSelf->Server()->ClientTP(ClientID), pResult->GetString(2));
+		str_format(aBuf, sizeof(aBuf), "auth_account!STATUS=AUTHED, ConstID=%s, ACC=%s, TP=%s, TOK=%s", pResult->GetString(0), pSelf->Server()->ClientUserAcc(ClientID), pSelf->Server()->ClientTP(ClientID), pResult->GetString(3));
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
 		
 		char aChatText[256];
-		str_format(aChatText, sizeof(aChatText), ACCSYS_FORMAT "'%s' is now authenticated as %s and renamed as %s", oldName, pSelf->Server()->ClientUserAcc(ClientID), pSelf->Server()->ClientName(ClientID));
+		str_format(aChatText, sizeof(aChatText), "'%s' is now authenticated as %s and renamed as %s", oldName, pSelf->Server()->ClientUserAcc(ClientID), pSelf->Server()->ClientName(ClientID));
 		pSelf->SendChat(-1, CGameContext::CHAT_ALL, aChatText);
 	}
 }

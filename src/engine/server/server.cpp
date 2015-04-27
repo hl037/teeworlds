@@ -1669,7 +1669,7 @@ void CServer::ConIpFromConstID(IConsole::IResult * pResult, void * pUser)
 	if(ClientID < 0)
 	{
 		char aBuf[128];
-		str_format(aBuf, sizeof(aBuf), "Error=No client for this ConstID, CosntID=%s", pResult->GetString(0));
+		str_format(aBuf, sizeof(aBuf), "ip_from_constid!Error=No client for this ConstID, ConstID=%s", pResult->GetString(0));
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
 	}
 	else
@@ -1677,7 +1677,7 @@ void CServer::ConIpFromConstID(IConsole::IResult * pResult, void * pUser)
 		char aBuf[128];
 		char addr[NETADDR_MAXSTRSIZE];
 		pServer->GetClientAddr(ClientID, addr, sizeof(addr));
-		str_format(aBuf, sizeof(aBuf), "ConstID=%s, IP=%s", aID, addr);
+		str_format(aBuf, sizeof(aBuf), "ip_from_constid!ConstID=%s, IP=%s", pResult->GetString(0), addr);
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "AccSys", aBuf);
 	}
 }

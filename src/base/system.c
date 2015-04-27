@@ -1836,7 +1836,6 @@ void base32_to_bytes(unsigned char * bytes, size_t maxlen, const char * b32)
 	*ptr = 0;
 	int r = 8;
 	int t;
-	int i;
 	while(maxlen > 0)
 	{
 		if('A' <= *b32 && *b32 <= 'Z')
